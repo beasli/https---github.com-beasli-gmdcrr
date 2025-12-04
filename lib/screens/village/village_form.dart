@@ -419,8 +419,11 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
                   // connectivity & facilities
                   _nearestCity.text = d['nearest_city']?.toString() ?? _nearestCity.text;
+                  _distanceToCity.text = d['distance_to_nearest_city']?.toString() ?? _distanceToCity.text;
                   _headquartersName.text = d['taluka_headquarters']?.toString() ?? _headquartersName.text;
+                  _distanceToHQ.text = d['distance_to_taluka_headquarters']?.toString() ?? _distanceToHQ.text;
                   _districtHeadquartersName.text = d['district_headquarters']?.toString() ?? _districtHeadquartersName.text;
+                  _distanceToDistrictHQ.text = d['distance_to_district_headquarters']?.toString() ?? _distanceToDistrictHQ.text;
                   _busStationDetails.text = d['bus_station']?.toString() ?? _busStationDetails.text;
                   _railwayStationDetails.text = d['railway_station']?.toString() ?? _railwayStationDetails.text;
                   _postOfficeDetails.text = d['post_office']?.toString() ?? _postOfficeDetails.text;
@@ -601,11 +604,11 @@ class _VillageFormPageState extends State<VillageFormPage> {
     'businessFamilies': int.tryParse(_familiesBusinessCtrl.text),
     'unemployedFamilies': int.tryParse(_familiesUnemployedCtrl.text),
     'nearestCity': _nearestCity.text,
-    'distanceToCity': int.tryParse(_distanceToCity.text),
+    'distanceToCity': double.tryParse(_distanceToCity.text),
     'talukaHeadquarters': _headquartersName.text,
-    'distanceToHQ': int.tryParse(_distanceToHQ.text),
+    'distanceToHQ': double.tryParse(_distanceToHQ.text),
     'districtHeadquarters': _districtHeadquartersName.text,
-    'distanceToDistrictHQ': int.tryParse(_distanceToDistrictHQ.text),
+    'distanceToDistrictHQ': double.tryParse(_distanceToDistrictHQ.text),
     'busStation': _busStationDetails.text,
     'railwayStation': _railwayStationDetails.text,
     'postOffice': _postOfficeDetails.text,
@@ -827,12 +830,12 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('Village Area Details'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // total area removed per request
-          TextFormField(controller: _agriLandCtrl, decoration: const InputDecoration(labelText: 'Agricultural Land Area')),
-          TextFormField(controller: _irrigatedCtrl, decoration: const InputDecoration(labelText: 'Irrigated Land Area')),
-          TextFormField(controller: _unirrigatedCtrl, decoration: const InputDecoration(labelText: 'Unirrigated Land Area')),
-          TextFormField(controller: _residentialCtrl, decoration: const InputDecoration(labelText: 'Residential Land Area')),
-          TextFormField(controller: _waterCtrl, decoration: const InputDecoration(labelText: 'Area under Water')),
-          TextFormField(controller: _stonyCtrl, decoration: const InputDecoration(labelText: 'Stony Soil Area')),
+          TextFormField(controller: _agriLandCtrl, decoration: const InputDecoration(labelText: 'Agricultural Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _irrigatedCtrl, decoration: const InputDecoration(labelText: 'Irrigated Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _unirrigatedCtrl, decoration: const InputDecoration(labelText: 'Unirrigated Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _residentialCtrl, decoration: const InputDecoration(labelText: 'Residential Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _waterCtrl, decoration: const InputDecoration(labelText: 'Area under Water'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _stonyCtrl, decoration: const InputDecoration(labelText: 'Stony Soil Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 8),
           TextFormField(controller: _totalAreaCtrl, decoration: const InputDecoration(labelText: 'Total Area'), readOnly: true),
         ]),
@@ -872,12 +875,12 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('Connectivity'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.1. Connectivity Distance (Detail & Distance in Km)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          TextFormField(controller: _nearestCity, decoration: const InputDecoration(labelText: 'Nearest City *', hintText: 'City Name')),
-          TextFormField(controller: _distanceToCity, decoration: const InputDecoration(labelText: 'Distance to Nearest City (km) *', hintText: 'e.g., 10'), keyboardType: TextInputType.number),
-          TextFormField(controller: _headquartersName, decoration: const InputDecoration(labelText: 'Taluka Headquarters *', hintText: 'Headquarters Name')),
-          TextFormField(controller: _distanceToHQ, decoration: const InputDecoration(labelText: 'Distance to Taluka Headquarters (km) *', hintText: 'e.g., 25'), keyboardType: TextInputType.number),
-          TextFormField(controller: _districtHeadquartersName, decoration: const InputDecoration(labelText: 'District Headquarters *', hintText: 'Headquarters Name')),
-          TextFormField(controller: _distanceToDistrictHQ, decoration: const InputDecoration(labelText: 'Distance to District Headquarters (km) *', hintText: 'e.g., 50'), keyboardType: TextInputType.number),
+          TextFormField(controller: _nearestCity, decoration: const InputDecoration(labelText: 'Nearest City *', hintText: 'City Name'),),
+          TextFormField(controller: _distanceToCity, decoration: const InputDecoration(labelText: 'Distance to Nearest City (km) *', hintText: 'e.g., 10.5'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _headquartersName, decoration: const InputDecoration(labelText: 'Taluka Headquarters *', hintText: 'Headquarters Name'),),
+          TextFormField(controller: _distanceToHQ, decoration: const InputDecoration(labelText: 'Distance to Taluka Headquarters (km) *', hintText: 'e.g., 25.5'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _districtHeadquartersName, decoration: const InputDecoration(labelText: 'District Headquarters *', hintText: 'Headquarters Name'),),
+          TextFormField(controller: _distanceToDistrictHQ, decoration: const InputDecoration(labelText: 'Distance to District Headquarters (km) *', hintText: 'e.g., 50.2'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 12),
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.2. Facilities (Detail & Distance)', style: TextStyle(fontWeight: FontWeight.bold)))),
           TextFormField(controller: _busStationDetails, decoration: const InputDecoration(labelText: 'Bus Station Details *', hintText: 'e.g., Central Bus Stand, 2 km away')),
