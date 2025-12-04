@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:gmdcrr/core/config/env.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/services/location_service.dart';
 
@@ -23,7 +24,11 @@ class _VillageFormPageState extends State<VillageFormPage> {
   int? _draftId;
   int? _remoteSurveyId;
   bool _isInitializing = true;
+  String? _processingAction; // null, 'draft', or 'submit'
   List<Map<String, dynamic>> _remoteMedia = [];
+
+  // Validation
+  final Map<String, String?> _errors = {};
 
   // Location
   double? _lat, _lng;
@@ -708,6 +713,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
   }
 
   Future<void> _processSubmission({required String surveyStatus}) async {
+    if (!mounted) return;
+    setState(() => _processingAction = surveyStatus == 'completed' ? 'submit' : 'draft');
     // Save draft first to ensure data is not lost.
     // The local DB status will be updated to 'pending' if upload fails.
     await _saveToLocalDb(surveyStatus: surveyStatus, localDbStatus: 'draft');
@@ -742,14 +749,107 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    setState(() => _processingAction = null);
     Navigator.of(context).pop();
   }
 
+  bool _validateForm() {
+    final newErrors = <String, String?>{};
+    bool isValid = true;
+
+    void check(TextEditingController ctrl, String key, [int? step]) {
+      if (ctrl.text.trim().isEmpty) {
+        newErrors[key] = 'This field is mandatory';
+        isValid = false;
+        if (step != null && _currentStep != step) {
+          setState(() => _currentStep = step);
+        }
+      }
+    }
+
+    void checkBool(bool? val, String key, [int? step]) {
+      if (val == null) {
+        newErrors[key] = 'Please select Yes or No';
+        isValid = false;
+        if (step != null && _currentStep != step) {
+          setState(() => _currentStep = step);
+        }
+      }
+    }
+
+    // Step 0
+    check(_totalPopulationCtrl, 'totalPopulation', 0);
+
+    // Step 1
+    check(_agriLandCtrl, 'agriLand', 1);
+    check(_irrigatedCtrl, 'irrigatedLand', 1);
+    check(_unirrigatedCtrl, 'unirrigatedLand', 1);
+    check(_residentialCtrl, 'residentialLand', 1);
+    check(_waterCtrl, 'waterArea', 1);
+    check(_stonyCtrl, 'stonyArea', 1);
+
+    // Step 2
+    check(_familiesGeneralCtrl, 'generalFamilies', 2);
+    check(_familiesOBCCtrl, 'obcFamilies', 2);
+    check(_familiesSCCtrl, 'scFamilies', 2);
+    check(_familiesSTCtrl, 'stFamilies', 2);
+    check(_familiesFarmingCtrl, 'farmingFamilies', 2);
+    check(_familiesLabourCtrl, 'farmLabourFamilies', 2);
+    check(_familiesGovtCtrl, 'govtJobFamilies', 2);
+    check(_familiesNonGovtCtrl, 'nonGovtJobFamilies', 2);
+    check(_familiesBusinessCtrl, 'businessFamilies', 2);
+    check(_familiesUnemployedCtrl, 'unemployedFamilies', 2);
+
+    // Step 3
+    check(_nearestCity, 'nearestCity', 3);
+    check(_distanceToCity, 'distanceToCity', 3);
+    check(_headquartersName, 'talukaHeadquarters', 3);
+    check(_distanceToHQ, 'distanceToHQ', 3);
+    check(_districtHeadquartersName, 'districtHeadquarters', 3);
+    check(_distanceToDistrictHQ, 'distanceToDistrictHQ', 3);
+    check(_busStationDetails, 'busStation', 3);
+    check(_railwayStationDetails, 'railwayStation', 3);
+    check(_postOfficeDetails, 'postOffice', 3);
+    check(_policeStationDetails, 'policeStation', 3);
+    check(_bankDetails, 'bank', 3);
+
+    // Step 4 - Infrastructure
+    final infraChecks = {
+      'hasAsphaltRoad': {'bool': hasAsphaltRoad, 'ctrl': _asphaltRoadCount}, 'hasRawRoad': {'bool': hasRawRoad, 'ctrl': _rawRoadCount},
+      'hasWaterSystem': {'bool': hasWaterSystem, 'ctrl': _waterSystemCount}, 'hasDrainage': {'bool': hasDrainage, 'ctrl': _drainageSystemCount},
+      'hasElectricity': {'bool': hasElectricity, 'ctrl': _electricitySystemCount}, 'hasWasteDisposal': {'bool': hasWasteDisposal, 'ctrl': _wasteDisposalCount},
+      'hasWaterStorage': {'bool': hasWaterStorage, 'ctrl': _waterStorageCount}, 'hasPublicWell': {'bool': hasPublicWell, 'ctrl': _publicWellCount},
+      'hasPublicPond': {'bool': hasPublicPond, 'ctrl': _publicPondCount}, 'hasWaterForCattle': {'bool': hasWaterForCattle, 'ctrl': _waterForCattleCount},
+      'hasPrimarySchool': {'bool': hasPrimarySchool, 'ctrl': _primarySchoolCount}, 'hasSecondarySchool': {'bool': hasSecondarySchool, 'ctrl': _secondarySchoolCount},
+      'hasHigherSecondary': {'bool': hasHigherSecondary, 'ctrl': _higherSecondaryCount}, 'hasCollege': {'bool': hasCollege, 'ctrl': _collegeCount},
+      'hasUniversity': {'bool': hasUniversity, 'ctrl': _universityCount}, 'hasAnganwadi': {'bool': hasAnganwadi, 'ctrl': _anganwadiCount}, 'hasItc': {'bool': hasItc, 'ctrl': _itcCount},
+      'hasDispensary': {'bool': hasDispensary, 'ctrl': _dispensaryCount}, 'hasPhc': {'bool': hasPhc, 'ctrl': _phcCount}, 'hasGovHospital': {'bool': hasGovHospital, 'ctrl': _govHospitalCount},
+      'hasPrivateHospital': {'bool': hasPrivateHospital, 'ctrl': _privateHospitalCount}, 'hasDrugStore': {'bool': hasDrugStore, 'ctrl': _drugStoreCount},
+      'hasAnimalHospital': {'bool': hasAnimalHospital, 'ctrl': _animalHospitalCount}, 'hasCommunityHall': {'bool': hasCommunityHall, 'ctrl': _communityHallCount},
+      'hasFairPriceShop': {'bool': hasFairPriceShop, 'ctrl': _fairPriceShopCount}, 'hasGroceryMarket': {'bool': hasGroceryMarket, 'ctrl': _groceryMarketCount},
+      'hasVegetableMarket': {'bool': hasVegetableMarket, 'ctrl': _vegetableMarketCount}, 'hasGrindingMill': {'bool': hasGrindingMill, 'ctrl': _grindingMillCount},
+      'hasRestaurant': {'bool': hasRestaurant, 'ctrl': _restaurantCount}, 'hasPublicTransport': {'bool': hasPublicTransport, 'ctrl': _publicTransportCount},
+      'hasCooperative': {'bool': hasCooperative, 'ctrl': _cooperativeCount}, 'hasPublicGarden': {'bool': hasPublicGarden, 'ctrl': _publicGardenCount},
+      'hasCinema': {'bool': hasCinema, 'ctrl': _cinemaCount}, 'hasColdStorage': {'bool': hasColdStorage, 'ctrl': _coldStorageCount},
+      'hasSportsGround': {'bool': hasSportsGround, 'ctrl': _sportsGroundCount}, 'hasTemple': {'bool': hasTemple, 'ctrl': _templeCount}, 'hasMosque': {'bool': hasMosque, 'ctrl': _mosqueCount},
+      'hasOtherReligious': {'bool': hasOtherReligious, 'ctrl': _otherReligiousCount}, 'hasCremation': {'bool': hasCremation, 'ctrl': _cremationGroundCount},
+      'hasCemetery': {'bool': hasCemetery, 'ctrl': _cemeteryCount},
+    };
+    infraChecks.forEach((key, value) {
+      checkBool(value['bool'] as bool?, key, 4);
+      if (value['bool'] == true) {
+        check(value['ctrl'] as TextEditingController, '${key}Count', 4);
+      }
+    });
+
+    setState(() => _errors.addAll(newErrors));
+    return isValid;
+  }
+
   Future<void> _handleSubmit() async {
-    // Validate mandatory radio buttons before submitting as 'completed'
-    if (hasAsphaltRoad == null || hasRawRoad == null || hasWaterSystem == null || hasDrainage == null || hasElectricity == null || hasWasteDisposal == null || hasWaterStorage == null || hasPublicWell == null || hasPublicPond == null || hasWaterForCattle == null || hasPrimarySchool == null || hasSecondarySchool == null || hasHigherSecondary == null || hasCollege == null || hasUniversity == null || hasAnganwadi == null || hasItc == null || hasDispensary == null || hasPhc == null || hasGovHospital == null || hasPrivateHospital == null || hasDrugStore == null || hasAnimalHospital == null || hasCommunityHall == null || hasFairPriceShop == null || hasGroceryMarket == null || hasVegetableMarket == null || hasGrindingMill == null || hasRestaurant == null || hasPublicTransport == null || hasCooperative == null || hasPublicGarden == null || hasCinema == null || hasColdStorage == null || hasSportsGround == null || hasTemple == null || hasMosque == null || hasOtherReligious == null || hasCremation == null || hasCemetery == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please answer all mandatory (Yes/No) questions in the Infrastructure section.'), backgroundColor: Colors.red));
-      setState(() => _currentStep = 4); // Navigate to the infrastructure step
+    setState(() => _errors.clear());
+    if (!_validateForm()) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all mandatory fields.'), backgroundColor: Colors.red));
       return;
     }
     await _processSubmission(surveyStatus: 'completed');
@@ -831,23 +931,22 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('General Identification'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village name'), readOnly: true),
-          TextFormField(controller: _gpCtrl, decoration: const InputDecoration(labelText: 'Gram Panchayat'), readOnly: true),
+          TextFormField(controller: _gpCtrl, decoration: InputDecoration(labelText: 'Gram Panchayat', errorText: _errors['gramPanchayat']), readOnly: true),
           TextFormField(controller: _talukaCtrl, decoration: const InputDecoration(labelText: 'Taluka'), readOnly: true),
           TextFormField(controller: _districtCtrl, decoration: const InputDecoration(labelText: 'District'), readOnly: true),
-          TextFormField(controller: _totalPopulationCtrl, decoration: const InputDecoration(labelText: 'Population'), keyboardType: TextInputType.number),
+          TextFormField(controller: _totalPopulationCtrl, decoration: InputDecoration(labelText: 'Population', errorText: _errors['totalPopulation']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
         ]),
         isActive: _currentStep == 0,
       ),
       Step(
         title: const Text('Village Area Details'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // total area removed per request
-          TextFormField(controller: _agriLandCtrl, decoration: const InputDecoration(labelText: 'Agricultural Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _irrigatedCtrl, decoration: const InputDecoration(labelText: 'Irrigated Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _unirrigatedCtrl, decoration: const InputDecoration(labelText: 'Unirrigated Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _residentialCtrl, decoration: const InputDecoration(labelText: 'Residential Land Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _waterCtrl, decoration: const InputDecoration(labelText: 'Area under Water'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _stonyCtrl, decoration: const InputDecoration(labelText: 'Stony Soil Area'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _agriLandCtrl, decoration: InputDecoration(labelText: 'Agricultural Land Area', errorText: _errors['agriLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _irrigatedCtrl, decoration: InputDecoration(labelText: 'Irrigated Land Area', errorText: _errors['irrigatedLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _unirrigatedCtrl, decoration: InputDecoration(labelText: 'Unirrigated Land Area', errorText: _errors['unirrigatedLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _residentialCtrl, decoration: InputDecoration(labelText: 'Residential Land Area', errorText: _errors['residentialLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _waterCtrl, decoration: InputDecoration(labelText: 'Area under Water', errorText: _errors['waterArea']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _stonyCtrl, decoration: InputDecoration(labelText: 'Stony Soil Area', errorText: _errors['stonyArea']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 8),
           TextFormField(controller: _totalAreaCtrl, decoration: const InputDecoration(labelText: 'Total Area'), readOnly: true),
         ]),
@@ -859,27 +958,27 @@ class _VillageFormPageState extends State<VillageFormPage> {
           InkWell(onTap: () => setState(() => _currentStep = 2), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('3.1. Families by Social Group', style: TextStyle(fontWeight: FontWeight.bold)))),
           // Families by social group
           Row(children: [
-            Expanded(child: TextFormField(controller: _familiesGeneralCtrl, decoration: const InputDecoration(labelText: 'General'), keyboardType: TextInputType.number)),
+            Expanded(child: TextFormField(controller: _familiesGeneralCtrl, decoration: InputDecoration(labelText: 'General', errorText: _errors['generalFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
             const SizedBox(width: 8),
-            Expanded(child: TextFormField(controller: _familiesOBCCtrl, decoration: const InputDecoration(labelText: 'OBC'), keyboardType: TextInputType.number)),
+            Expanded(child: TextFormField(controller: _familiesOBCCtrl, decoration: InputDecoration(labelText: 'OBC', errorText: _errors['obcFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
           ]),
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: TextFormField(controller: _familiesSCCtrl, decoration: const InputDecoration(labelText: 'SC'), keyboardType: TextInputType.number)),
+            Expanded(child: TextFormField(controller: _familiesSCCtrl, decoration: InputDecoration(labelText: 'SC', errorText: _errors['scFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
             const SizedBox(width: 8),
-            Expanded(child: TextFormField(controller: _familiesSTCtrl, decoration: const InputDecoration(labelText: 'ST'), keyboardType: TextInputType.number)),
+            Expanded(child: TextFormField(controller: _familiesSTCtrl, decoration: InputDecoration(labelText: 'ST', errorText: _errors['stFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
           ]),
           const SizedBox(height: 8),
           TextFormField(controller: _familiesSocialTotalCtrl, decoration: const InputDecoration(labelText: 'Total (social groups)'), readOnly: true),
           const SizedBox(height: 12),
           InkWell(onTap: () => setState(() => _currentStep = 2), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('3.2. Families by Primary Occupation', style: TextStyle(fontWeight: FontWeight.bold)))),
           // Families by primary occupation
-          TextFormField(controller: _familiesFarmingCtrl, decoration: const InputDecoration(labelText: 'Farming families'), keyboardType: TextInputType.number),
-          TextFormField(controller: _familiesLabourCtrl, decoration: const InputDecoration(labelText: 'Farm labor families'), keyboardType: TextInputType.number),
-          TextFormField(controller: _familiesGovtCtrl, decoration: const InputDecoration(labelText: 'Govt/Semi-Govt job families'), keyboardType: TextInputType.number),
-          TextFormField(controller: _familiesNonGovtCtrl, decoration: const InputDecoration(labelText: 'Other Non-Govt job families'), keyboardType: TextInputType.number),
-          TextFormField(controller: _familiesBusinessCtrl, decoration: const InputDecoration(labelText: 'Private business households'), keyboardType: TextInputType.number),
-          TextFormField(controller: _familiesUnemployedCtrl, decoration: const InputDecoration(labelText: 'Unemployed families'), keyboardType: TextInputType.number),
+          TextFormField(controller: _familiesFarmingCtrl, decoration: InputDecoration(labelText: 'Farming families', errorText: _errors['farmingFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          TextFormField(controller: _familiesLabourCtrl, decoration: InputDecoration(labelText: 'Farm labor families', errorText: _errors['farmLabourFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          TextFormField(controller: _familiesGovtCtrl, decoration: InputDecoration(labelText: 'Govt/Semi-Govt job families', errorText: _errors['govtJobFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          TextFormField(controller: _familiesNonGovtCtrl, decoration: InputDecoration(labelText: 'Other Non-Govt job families', errorText: _errors['nonGovtJobFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          TextFormField(controller: _familiesBusinessCtrl, decoration: InputDecoration(labelText: 'Private business households', errorText: _errors['businessFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          TextFormField(controller: _familiesUnemployedCtrl, decoration: InputDecoration(labelText: 'Unemployed families', errorText: _errors['unemployedFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
         ]),
         isActive: _currentStep == 2,
       ),
@@ -887,19 +986,19 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('Connectivity'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.1. Connectivity Distance (Detail & Distance in Km)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          TextFormField(controller: _nearestCity, decoration: const InputDecoration(labelText: 'Nearest City *', hintText: 'City Name'),),
-          TextFormField(controller: _distanceToCity, decoration: const InputDecoration(labelText: 'Distance to Nearest City (km) *', hintText: 'e.g., 10.5'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _headquartersName, decoration: const InputDecoration(labelText: 'Taluka Headquarters *', hintText: 'Headquarters Name'),),
-          TextFormField(controller: _distanceToHQ, decoration: const InputDecoration(labelText: 'Distance to Taluka Headquarters (km) *', hintText: 'e.g., 25.5'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _districtHeadquartersName, decoration: const InputDecoration(labelText: 'District Headquarters *', hintText: 'Headquarters Name'),),
-          TextFormField(controller: _distanceToDistrictHQ, decoration: const InputDecoration(labelText: 'Distance to District Headquarters (km) *', hintText: 'e.g., 50.2'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          TextFormField(controller: _nearestCity, decoration: InputDecoration(labelText: 'Nearest City *', hintText: 'City Name', errorText: _errors['nearestCity'])),
+          TextFormField(controller: _distanceToCity, decoration: InputDecoration(labelText: 'Distance to Nearest City (km) *', hintText: 'e.g., 10.5', errorText: _errors['distanceToCity']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
+          TextFormField(controller: _headquartersName, decoration: InputDecoration(labelText: 'Taluka Headquarters *', hintText: 'Headquarters Name', errorText: _errors['talukaHeadquarters'])),
+          TextFormField(controller: _distanceToHQ, decoration: InputDecoration(labelText: 'Distance to Taluka Headquarters (km) *', hintText: 'e.g., 25.5', errorText: _errors['distanceToHQ']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
+          TextFormField(controller: _districtHeadquartersName, decoration: InputDecoration(labelText: 'District Headquarters *', hintText: 'Headquarters Name', errorText: _errors['districtHeadquarters'])),
+          TextFormField(controller: _distanceToDistrictHQ, decoration: InputDecoration(labelText: 'Distance to District Headquarters (km) *', hintText: 'e.g., 50.2', errorText: _errors['distanceToDistrictHQ']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
           const SizedBox(height: 12),
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.2. Facilities (Detail & Distance)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          TextFormField(controller: _busStationDetails, decoration: const InputDecoration(labelText: 'Bus Station Details *', hintText: 'e.g., Central Bus Stand, 2 km away')),
-          TextFormField(controller: _railwayStationDetails, decoration: const InputDecoration(labelText: 'Railway Station Details *', hintText: 'e.g., City Railway Station, 15 km away')),
-          TextFormField(controller: _postOfficeDetails, decoration: const InputDecoration(labelText: 'Post Office Details *', hintText: 'e.g., Main Post Office, 1 km away')),
-          TextFormField(controller: _policeStationDetails, decoration: const InputDecoration(labelText: 'Police Station Details *', hintText: 'e.g., Taluka Police Station, 8 km away')),
-          TextFormField(controller: _bankDetails, decoration: const InputDecoration(labelText: 'Bank Details *', hintText: 'e.g., State Bank, 5 km away')),
+          TextFormField(controller: _busStationDetails, decoration: InputDecoration(labelText: 'Bus Station Details *', hintText: 'e.g., Central Bus Stand, 2 km away', errorText: _errors['busStation'])),
+          TextFormField(controller: _railwayStationDetails, decoration: InputDecoration(labelText: 'Railway Station Details *', hintText: 'e.g., City Railway Station, 15 km away', errorText: _errors['railwayStation'])),
+          TextFormField(controller: _postOfficeDetails, decoration: InputDecoration(labelText: 'Post Office Details *', hintText: 'e.g., Main Post Office, 1 km away', errorText: _errors['postOffice'])),
+          TextFormField(controller: _policeStationDetails, decoration: InputDecoration(labelText: 'Police Station Details *', hintText: 'e.g., Taluka Police Station, 8 km away', errorText: _errors['policeStation'])),
+          TextFormField(controller: _bankDetails, decoration: InputDecoration(labelText: 'Bank Details *', hintText: 'e.g., State Bank, 5 km away', errorText: _errors['bank'])),
         ]),
         isActive: _currentStep == 3,
       ),
@@ -907,230 +1006,230 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('Infrastructure & Utilities'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // 5.1 Roads, Water & Utilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Approach Asphalt Road *', hasAsphaltRoad, (val) => setState(() => hasAsphaltRoad = val)),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasAsphaltRoad'] != null || _errors['hasRawRoad'] != null || _errors['hasWaterSystem'] != null || _errors['hasDrainage'] != null || _errors['hasElectricity'] != null || _errors['hasWasteDisposal'] != null) ? Colors.red : null)))),
+          _buildRadioGroup('Approach Asphalt Road *', hasAsphaltRoad, (val) => setState(() => hasAsphaltRoad = val), errorText: _errors['hasAsphaltRoad']),
           if (hasAsphaltRoad == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _asphaltRoadCount, decoration: const InputDecoration(labelText: 'Approach Asphalt Road (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _asphaltRoadCount, decoration: InputDecoration(labelText: 'Approach Asphalt Road (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasAsphaltRoadCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Approach Raw Road *', hasRawRoad, (val) => setState(() => hasRawRoad = val)),
+          _buildRadioGroup('Approach Raw Road *', hasRawRoad, (val) => setState(() => hasRawRoad = val), errorText: _errors['hasRawRoad']),
           if (hasRawRoad == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _rawRoadCount, decoration: const InputDecoration(labelText: 'Approach Raw Road (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _rawRoadCount, decoration: InputDecoration(labelText: 'Approach Raw Road (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasRawRoadCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Water system available *', hasWaterSystem, (val) => setState(() => hasWaterSystem = val)),
+          _buildRadioGroup('Water system available *', hasWaterSystem, (val) => setState(() => hasWaterSystem = val), errorText: _errors['hasWaterSystem']),
           if (hasWaterSystem == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _waterSystemCount, decoration: const InputDecoration(labelText: 'Water system (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _waterSystemCount, decoration: InputDecoration(labelText: 'Water system (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasWaterSystemCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Drainage system available *', hasDrainage, (val) => setState(() => hasDrainage = val)),
+          _buildRadioGroup('Drainage system available *', hasDrainage, (val) => setState(() => hasDrainage = val), errorText: _errors['hasDrainage']),
           if (hasDrainage == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _drainageSystemCount, decoration: const InputDecoration(labelText: 'Drainage system (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _drainageSystemCount, decoration: InputDecoration(labelText: 'Drainage system (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasDrainageCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Electricity system available *', hasElectricity, (val) => setState(() => hasElectricity = val)),
+          _buildRadioGroup('Electricity system available *', hasElectricity, (val) => setState(() => hasElectricity = val), errorText: _errors['hasElectricity']),
           if (hasElectricity == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _electricitySystemCount, decoration: const InputDecoration(labelText: 'Electricity system (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _electricitySystemCount, decoration: InputDecoration(labelText: 'Electricity system (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasElectricityCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Public system for waste disposal *', hasWasteDisposal, (val) => setState(() => hasWasteDisposal = val)),
+          _buildRadioGroup('Public system for waste disposal *', hasWasteDisposal, (val) => setState(() => hasWasteDisposal = val), errorText: _errors['hasWasteDisposal']),
           if (hasWasteDisposal == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _wasteDisposalCount, decoration: const InputDecoration(labelText: 'Public system for waste disposal (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _wasteDisposalCount, decoration: InputDecoration(labelText: 'Public system for waste disposal (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasWasteDisposalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
 
           const SizedBox(height: 12),
           // 5.2 Public Water Sources
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Water Storage Arrangement *', hasWaterStorage, (val) => setState(() => hasWaterStorage = val)),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasWaterStorage'] != null || _errors['hasPublicWell'] != null || _errors['hasPublicPond'] != null || _errors['hasWaterForCattle'] != null) ? Colors.red : null)))),
+          _buildRadioGroup('Water Storage Arrangement *', hasWaterStorage, (val) => setState(() => hasWaterStorage = val), errorText: _errors['hasWaterStorage']),
           if (hasWaterStorage == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _waterStorageCount, decoration: const InputDecoration(labelText: 'Water Storage Arrangement (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _waterStorageCount, decoration: InputDecoration(labelText: 'Water Storage Arrangement (count)', hintText: 'Enter count if available', errorText: _errors['hasWaterStorageCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Public Well *', hasPublicWell, (val) => setState(() => hasPublicWell = val)),
+          _buildRadioGroup('Public Well *', hasPublicWell, (val) => setState(() => hasPublicWell = val), errorText: _errors['hasPublicWell']),
           if (hasPublicWell == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _publicWellCount, decoration: const InputDecoration(labelText: 'Public Well (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _publicWellCount, decoration: InputDecoration(labelText: 'Public Well (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicWellCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Public Pond *', hasPublicPond, (val) => setState(() => hasPublicPond = val)),
+          _buildRadioGroup('Public Pond *', hasPublicPond, (val) => setState(() => hasPublicPond = val), errorText: _errors['hasPublicPond']),
           if (hasPublicPond == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _publicPondCount, decoration: const InputDecoration(labelText: 'Public Pond (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _publicPondCount, decoration: InputDecoration(labelText: 'Public Pond (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicPondCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Water for Cattle *', hasWaterForCattle, (val) => setState(() => hasWaterForCattle = val)),
+          _buildRadioGroup('Water for Cattle *', hasWaterForCattle, (val) => setState(() => hasWaterForCattle = val), errorText: _errors['hasWaterForCattle']),
           if (hasWaterForCattle == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _waterForCattleCount, decoration: const InputDecoration(labelText: 'Water for Cattle (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _waterForCattleCount, decoration: InputDecoration(labelText: 'Water for Cattle (count)', hintText: 'Enter count if available', errorText: _errors['hasWaterForCattleCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
 
           const SizedBox(height: 12),
           // 5.3 Education Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Primary school *', hasPrimarySchool, (val) => setState(() => hasPrimarySchool = val)),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasPrimarySchool'] != null || _errors['hasSecondarySchool'] != null || _errors['hasHigherSecondary'] != null || _errors['hasCollege'] != null || _errors['hasUniversity'] != null || _errors['hasAnganwadi'] != null || _errors['hasItc'] != null) ? Colors.red : null)))),
+          _buildRadioGroup('Primary school *', hasPrimarySchool, (val) => setState(() => hasPrimarySchool = val), errorText: _errors['hasPrimarySchool']),
           if (hasPrimarySchool == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _primarySchoolCount, decoration: const InputDecoration(labelText: 'Primary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _primarySchoolCount, decoration: InputDecoration(labelText: 'Primary school (count)', hintText: 'Enter count if available', errorText: _errors['hasPrimarySchoolCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Secondary school *', hasSecondarySchool, (val) => setState(() => hasSecondarySchool = val)),
+          _buildRadioGroup('Secondary school *', hasSecondarySchool, (val) => setState(() => hasSecondarySchool = val), errorText: _errors['hasSecondarySchool']),
           if (hasSecondarySchool == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _secondarySchoolCount, decoration: const InputDecoration(labelText: 'Secondary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _secondarySchoolCount, decoration: InputDecoration(labelText: 'Secondary school (count)', hintText: 'Enter count if available', errorText: _errors['hasSecondarySchoolCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Higher Secondary School *', hasHigherSecondary, (val) => setState(() => hasHigherSecondary = val)),
+          _buildRadioGroup('Higher Secondary School *', hasHigherSecondary, (val) => setState(() => hasHigherSecondary = val), errorText: _errors['hasHigherSecondary']),
           if (hasHigherSecondary == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _higherSecondaryCount, decoration: const InputDecoration(labelText: 'Higher Secondary School (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _higherSecondaryCount, decoration: InputDecoration(labelText: 'Higher Secondary School (count)', hintText: 'Enter count if available', errorText: _errors['hasHigherSecondaryCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('College *', hasCollege, (val) => setState(() => hasCollege = val)),
+          _buildRadioGroup('College *', hasCollege, (val) => setState(() => hasCollege = val), errorText: _errors['hasCollege']),
           if (hasCollege == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _collegeCount, decoration: const InputDecoration(labelText: 'College (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _collegeCount, decoration: InputDecoration(labelText: 'College (count)', hintText: 'Enter count if available', errorText: _errors['hasCollegeCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('University *', hasUniversity, (val) => setState(() => hasUniversity = val)),
+          _buildRadioGroup('University *', hasUniversity, (val) => setState(() => hasUniversity = val), errorText: _errors['hasUniversity']),
           if (hasUniversity == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _universityCount, decoration: const InputDecoration(labelText: 'University (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _universityCount, decoration: InputDecoration(labelText: 'University (count)', hintText: 'Enter count if available', errorText: _errors['hasUniversityCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Anganwadi *', hasAnganwadi, (val) => setState(() => hasAnganwadi = val)),
+          _buildRadioGroup('Anganwadi *', hasAnganwadi, (val) => setState(() => hasAnganwadi = val), errorText: _errors['hasAnganwadi']),
           if (hasAnganwadi == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _anganwadiCount, decoration: const InputDecoration(labelText: 'Anganwadi (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _anganwadiCount, decoration: InputDecoration(labelText: 'Anganwadi (count)', hintText: 'Enter count if available', errorText: _errors['hasAnganwadiCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Industrial Training Centre *', hasItc, (val) => setState(() => hasItc = val)),
+          _buildRadioGroup('Industrial Training Centre *', hasItc, (val) => setState(() => hasItc = val), errorText: _errors['hasItc']),
           if (hasItc == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _itcCount, decoration: const InputDecoration(labelText: 'Industrial Training Centre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _itcCount, decoration: InputDecoration(labelText: 'Industrial Training Centre (count)', hintText: 'Enter count if available', errorText: _errors['hasItcCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
 
           const SizedBox(height: 12),
           // 5.4 Health Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Dispensary *', hasDispensary, (val) => setState(() => hasDispensary = val)),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasDispensary'] != null || _errors['hasPhc'] != null || _errors['hasGovHospital'] != null || _errors['hasPrivateHospital'] != null || _errors['hasDrugStore'] != null || _errors['hasAnimalHospital'] != null) ? Colors.red : null)))),
+          _buildRadioGroup('Dispensary *', hasDispensary, (val) => setState(() => hasDispensary = val), errorText: _errors['hasDispensary']),
           if (hasDispensary == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _dispensaryCount, decoration: const InputDecoration(labelText: 'Dispensary (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _dispensaryCount, decoration: InputDecoration(labelText: 'Dispensary (count)', hintText: 'Enter count if available', errorText: _errors['hasDispensaryCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Primary Health Centre *', hasPhc, (val) => setState(() => hasPhc = val)),
+          _buildRadioGroup('Primary Health Centre *', hasPhc, (val) => setState(() => hasPhc = val), errorText: _errors['hasPhc']),
           if (hasPhc == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _phcCount, decoration: const InputDecoration(labelText: 'Primary Health Centre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _phcCount, decoration: InputDecoration(labelText: 'Primary Health Centre (count)', hintText: 'Enter count if available', errorText: _errors['hasPhcCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Government Hospital *', hasGovHospital, (val) => setState(() => hasGovHospital = val)),
+          _buildRadioGroup('Government Hospital *', hasGovHospital, (val) => setState(() => hasGovHospital = val), errorText: _errors['hasGovHospital']),
           if (hasGovHospital == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _govHospitalCount, decoration: const InputDecoration(labelText: 'Government Hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _govHospitalCount, decoration: InputDecoration(labelText: 'Government Hospital (count)', hintText: 'Enter count if available', errorText: _errors['hasGovHospitalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Private hospital *', hasPrivateHospital, (val) => setState(() => hasPrivateHospital = val)),
+          _buildRadioGroup('Private hospital *', hasPrivateHospital, (val) => setState(() => hasPrivateHospital = val), errorText: _errors['hasPrivateHospital']),
           if (hasPrivateHospital == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _privateHospitalCount, decoration: const InputDecoration(labelText: 'Private hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _privateHospitalCount, decoration: InputDecoration(labelText: 'Private hospital (count)', hintText: 'Enter count if available', errorText: _errors['hasPrivateHospitalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Drug store *', hasDrugStore, (val) => setState(() => hasDrugStore = val)),
+          _buildRadioGroup('Drug store *', hasDrugStore, (val) => setState(() => hasDrugStore = val), errorText: _errors['hasDrugStore']),
           if (hasDrugStore == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _drugStoreCount, decoration: const InputDecoration(labelText: 'Drug store (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _drugStoreCount, decoration: InputDecoration(labelText: 'Drug store (count)', hintText: 'Enter count if available', errorText: _errors['hasDrugStoreCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Animal Hospital *', hasAnimalHospital, (val) => setState(() => hasAnimalHospital = val)),
+          _buildRadioGroup('Animal Hospital *', hasAnimalHospital, (val) => setState(() => hasAnimalHospital = val), errorText: _errors['hasAnimalHospital']),
           if (hasAnimalHospital == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _animalHospitalCount, decoration: const InputDecoration(labelText: 'Animal Hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _animalHospitalCount, decoration: InputDecoration(labelText: 'Animal Hospital (count)', hintText: 'Enter count if available', errorText: _errors['hasAnimalHospitalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
 
           const SizedBox(height: 12),
           // 5.5 Markets, Community & Services
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Community Hall *', hasCommunityHall, (val) => setState(() => hasCommunityHall = val)),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasCommunityHall'] != null || _errors['hasFairPriceShop'] != null || _errors['hasGroceryMarket'] != null || _errors['hasVegetableMarket'] != null || _errors['hasGrindingMill'] != null || _errors['hasRestaurant'] != null || _errors['hasPublicTransport'] != null || _errors['hasCooperative'] != null || _errors['hasPublicGarden'] != null || _errors['hasCinema'] != null || _errors['hasColdStorage'] != null || _errors['hasSportsGround'] != null) ? Colors.red : null)))),
+          _buildRadioGroup('Community Hall *', hasCommunityHall, (val) => setState(() => hasCommunityHall = val), errorText: _errors['hasCommunityHall']),
           if (hasCommunityHall == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _communityHallCount, decoration: const InputDecoration(labelText: 'Community Hall (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Fair price shop *', hasFairPriceShop, (val) => setState(() => hasFairPriceShop = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _communityHallCount, decoration: InputDecoration(labelText: 'Community Hall (count)', hintText: 'Enter count if available', errorText: _errors['hasCommunityHallCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Fair price shop *', hasFairPriceShop, (val) => setState(() => hasFairPriceShop = val), errorText: _errors['hasFairPriceShop']),
           if (hasFairPriceShop == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _fairPriceShopCount, decoration: const InputDecoration(labelText: 'Fair price shop (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Grocery market *', hasGroceryMarket, (val) => setState(() => hasGroceryMarket = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _fairPriceShopCount, decoration: InputDecoration(labelText: 'Fair price shop (count)', hintText: 'Enter count if available', errorText: _errors['hasFairPriceShopCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Grocery market *', hasGroceryMarket, (val) => setState(() => hasGroceryMarket = val), errorText: _errors['hasGroceryMarket']),
           if (hasGroceryMarket == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _groceryMarketCount, decoration: const InputDecoration(labelText: 'Grocery market (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Vegetable market *', hasVegetableMarket, (val) => setState(() => hasVegetableMarket = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _groceryMarketCount, decoration: InputDecoration(labelText: 'Grocery market (count)', hintText: 'Enter count if available', errorText: _errors['hasGroceryMarketCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Vegetable market *', hasVegetableMarket, (val) => setState(() => hasVegetableMarket = val), errorText: _errors['hasVegetableMarket']),
           if (hasVegetableMarket == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _vegetableMarketCount, decoration: const InputDecoration(labelText: 'Vegetable market (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Grain grinding mill *', hasGrindingMill, (val) => setState(() => hasGrindingMill = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _vegetableMarketCount, decoration: InputDecoration(labelText: 'Vegetable market (count)', hintText: 'Enter count if available', errorText: _errors['hasVegetableMarketCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Grain grinding mill *', hasGrindingMill, (val) => setState(() => hasGrindingMill = val), errorText: _errors['hasGrindingMill']),
           if (hasGrindingMill == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _grindingMillCount, decoration: const InputDecoration(labelText: 'Grain grinding mill (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Restaurant/Hotel *', hasRestaurant, (val) => setState(() => hasRestaurant = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _grindingMillCount, decoration: InputDecoration(labelText: 'Grain grinding mill (count)', hintText: 'Enter count if available', errorText: _errors['hasGrindingMillCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Restaurant/Hotel *', hasRestaurant, (val) => setState(() => hasRestaurant = val), errorText: _errors['hasRestaurant']),
           if (hasRestaurant == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _restaurantCount, decoration: const InputDecoration(labelText: 'Restaurant/Hotel (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Public Transport System *', hasPublicTransport, (val) => setState(() => hasPublicTransport = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _restaurantCount, decoration: InputDecoration(labelText: 'Restaurant/Hotel (count)', hintText: 'Enter count if available', errorText: _errors['hasRestaurantCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Public Transport System *', hasPublicTransport, (val) => setState(() => hasPublicTransport = val), errorText: _errors['hasPublicTransport']),
           if (hasPublicTransport == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicTransportCount, decoration: const InputDecoration(labelText: 'Public Transport System (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Cooperative Organization *', hasCooperative, (val) => setState(() => hasCooperative = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicTransportCount, decoration: InputDecoration(labelText: 'Public Transport System (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicTransportCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Cooperative Organization *', hasCooperative, (val) => setState(() => hasCooperative = val), errorText: _errors['hasCooperative']),
           if (hasCooperative == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cooperativeCount, decoration: const InputDecoration(labelText: 'Cooperative Organization (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Public Garden/Park *', hasPublicGarden, (val) => setState(() => hasPublicGarden = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cooperativeCount, decoration: InputDecoration(labelText: 'Cooperative Organization (count)', hintText: 'Enter count if available', errorText: _errors['hasCooperativeCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Public Garden/Park *', hasPublicGarden, (val) => setState(() => hasPublicGarden = val), errorText: _errors['hasPublicGarden']),
           if (hasPublicGarden == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicGardenCount, decoration: const InputDecoration(labelText: 'Public Garden/Park (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Cinema/Theatre *', hasCinema, (val) => setState(() => hasCinema = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicGardenCount, decoration: InputDecoration(labelText: 'Public Garden/Park (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicGardenCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Cinema/Theatre *', hasCinema, (val) => setState(() => hasCinema = val), errorText: _errors['hasCinema']),
           if (hasCinema == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cinemaCount, decoration: const InputDecoration(labelText: 'Cinema/Theatre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Cold Storage *', hasColdStorage, (val) => setState(() => hasColdStorage = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cinemaCount, decoration: InputDecoration(labelText: 'Cinema/Theatre (count)', hintText: 'Enter count if available', errorText: _errors['hasCinemaCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Cold Storage *', hasColdStorage, (val) => setState(() => hasColdStorage = val), errorText: _errors['hasColdStorage']),
           if (hasColdStorage == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _coldStorageCount, decoration: const InputDecoration(labelText: 'Cold Storage (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
-          _buildRadioGroup('Sports Ground *', hasSportsGround, (val) => setState(() => hasSportsGround = val)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _coldStorageCount, decoration: InputDecoration(labelText: 'Cold Storage (count)', hintText: 'Enter count if available', errorText: _errors['hasColdStorageCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+          _buildRadioGroup('Sports Ground *', hasSportsGround, (val) => setState(() => hasSportsGround = val), errorText: _errors['hasSportsGround']),
           if (hasSportsGround == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _sportsGroundCount, decoration: const InputDecoration(labelText: 'Sports Ground (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _sportsGroundCount, decoration: InputDecoration(labelText: 'Sports Ground (count)', hintText: 'Enter count if available', errorText: _errors['hasSportsGroundCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
 
           const SizedBox(height: 12),
           // 5.6 Religious/Mortality Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Temple *', hasTemple, (val) => setState(() => hasTemple = val)),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasTemple'] != null || _errors['hasMosque'] != null || _errors['hasOtherReligious'] != null || _errors['hasCremation'] != null || _errors['hasCemetery'] != null) ? Colors.red : null)))),
+          _buildRadioGroup('Temple *', hasTemple, (val) => setState(() => hasTemple = val), errorText: _errors['hasTemple']),
           if (hasTemple == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _templeCount, decoration: const InputDecoration(labelText: 'Temple (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _templeCount, decoration: InputDecoration(labelText: 'Temple (count)', hintText: 'Enter count if available', errorText: _errors['hasTempleCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Mosque *', hasMosque, (val) => setState(() => hasMosque = val)),
+          _buildRadioGroup('Mosque *', hasMosque, (val) => setState(() => hasMosque = val), errorText: _errors['hasMosque']),
           if (hasMosque == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _mosqueCount, decoration: const InputDecoration(labelText: 'Mosque (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _mosqueCount, decoration: InputDecoration(labelText: 'Mosque (count)', hintText: 'Enter count if available', errorText: _errors['hasMosqueCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Other Religious Place *', hasOtherReligious, (val) => setState(() => hasOtherReligious = val)),
+          _buildRadioGroup('Other Religious Place *', hasOtherReligious, (val) => setState(() => hasOtherReligious = val), errorText: _errors['hasOtherReligious']),
           if (hasOtherReligious == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _otherReligiousCount, decoration: const InputDecoration(labelText: 'Other Religious Place (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _otherReligiousCount, decoration: InputDecoration(labelText: 'Other Religious Place (count)', hintText: 'Enter count if available', errorText: _errors['hasOtherReligiousCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Cremation Ground *', hasCremation, (val) => setState(() => hasCremation = val)),
+          _buildRadioGroup('Cremation Ground *', hasCremation, (val) => setState(() => hasCremation = val), errorText: _errors['hasCremation']),
           if (hasCremation == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _cremationGroundCount, decoration: const InputDecoration(labelText: 'Cremation Ground (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _cremationGroundCount, decoration: InputDecoration(labelText: 'Cremation Ground (count)', hintText: 'Enter count if available', errorText: _errors['hasCremationCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
-          _buildRadioGroup('Cemetery *', hasCemetery, (val) => setState(() => hasCemetery = val)),
+          _buildRadioGroup('Cemetery *', hasCemetery, (val) => setState(() => hasCemetery = val), errorText: _errors['hasCemetery']),
           if (hasCemetery == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _cemeteryCount, decoration: const InputDecoration(labelText: 'Cemetery (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+              child: TextFormField(controller: _cemeteryCount, decoration: InputDecoration(labelText: 'Cemetery (count)', hintText: 'Enter count if available', errorText: _errors['hasCemeteryCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
             ),
         ]),
         isActive: _currentStep == 4,
@@ -1238,13 +1337,24 @@ class _VillageFormPageState extends State<VillageFormPage> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
-                child: OutlinedButton(onPressed: _handleSaveDraft, child: const Text('Save Draft')),
+                child: OutlinedButton(
+                  onPressed: _processingAction != null ? null : _handleSaveDraft,
+                  child: _processingAction == 'draft'
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Save Draft'),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: ElevatedButton(onPressed: _handleSubmit, child: const Text('Submit')),
+                child: ElevatedButton(
+                  onPressed: _processingAction != null ? null : _handleSubmit,
+                  child: _processingAction == 'submit'
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+                      : const Text('Submit'),
+                ),
               ),
             ],
           ),
@@ -1253,13 +1363,17 @@ class _VillageFormPageState extends State<VillageFormPage> {
     );
   }
 
-  Widget _buildRadioGroup(String title, bool? groupValue, ValueChanged<bool?> onChanged) {
+  Widget _buildRadioGroup(String title, bool? groupValue, ValueChanged<bool?> onChanged, {String? errorText}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 16.0, top: 8.0),
-          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: errorText != null ? Theme.of(context).colorScheme.error : null,
+            )),
         ),
         Row(
           children: [
@@ -1276,6 +1390,11 @@ class _VillageFormPageState extends State<VillageFormPage> {
             ),
           ],
         ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0, top: 4.0),
+            child: Text(errorText, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+          ),
       ],
     );
   }
