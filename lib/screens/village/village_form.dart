@@ -27,7 +27,6 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
   // Location
   double? _lat, _lng;
-  String _status = 'draft'; // Default status
 
   // Step fields - General
   final _villageNameCtrl = TextEditingController();
@@ -523,7 +522,6 @@ class _VillageFormPageState extends State<VillageFormPage> {
                     _lng = double.tryParse(d['lon'].toString());
                     _gpsLocation = '${_lat ?? ''},${_lng ?? ''}';
                   }
-                  _status = d['status']?.toString() ?? _status;
                 }
               }
             } catch (_) {}
@@ -580,8 +578,6 @@ class _VillageFormPageState extends State<VillageFormPage> {
   }
 
   Map<String, dynamic> _collectPayload() => {
-  // surveyor removed per request
-    'status': _status,
     'villageName': _villageNameCtrl.text,
     'gramPanchayat': _gpCtrl.text, // gram_panchayat_office
     'totalPopulation': int.tryParse(_totalPopulationCtrl.text.trim()),
@@ -698,53 +694,69 @@ class _VillageFormPageState extends State<VillageFormPage> {
     'gps': _gpsLocation,
   };
 
-  Future<void> _saveDraft() async {
+  Future<void> _saveToLocalDb({required String surveyStatus, required String localDbStatus}) async {
     if (_draftId == null) return;
-    final payload = _collectPayload();
+    final payload = _collectPayload()..['status'] = surveyStatus;
     await LocalDb().updateEntry(_draftId!, {
       'payload': jsonEncode(payload),
       'imagePath': _villagePhotoPath,
       'lat': _lat,
       'lng': _lng,
-      'status': 'draft',
+      'status': localDbStatus, // 'draft' or 'pending'
       'remoteSurveyId': _remoteSurveyId,
     });
   }
 
-  Future<void> _submit() async {
-    // Validate mandatory radio buttons
-    if (hasAsphaltRoad == null || hasRawRoad == null || hasWaterSystem == null || hasDrainage == null || hasElectricity == null || hasWasteDisposal == null || hasWaterStorage == null || hasPublicWell == null || hasPublicPond == null || hasWaterForCattle == null || hasPrimarySchool == null || hasSecondarySchool == null || hasHigherSecondary == null || hasCollege == null || hasUniversity == null || hasAnganwadi == null || hasItc == null || hasDispensary == null || hasPhc == null || hasGovHospital == null || hasPrivateHospital == null || hasDrugStore == null || hasAnimalHospital == null || hasCommunityHall == null || hasFairPriceShop == null || hasGroceryMarket == null || hasVegetableMarket == null || hasGrindingMill == null || hasRestaurant == null || hasPublicTransport == null || hasCooperative == null || hasPublicGarden == null || hasCinema == null || hasColdStorage == null || hasSportsGround == null || hasTemple == null || hasMosque == null || hasOtherReligious == null || hasCremation == null || hasCemetery == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please answer all mandatory (Yes/No) questions in the Infrastructure section.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      // Navigate to the infrastructure step
-      setState(() => _currentStep = 4);
+  Future<void> _processSubmission({required String surveyStatus}) async {
+    // Save draft first to ensure data is not lost.
+    // The local DB status will be updated to 'pending' if upload fails.
+    await _saveToLocalDb(surveyStatus: surveyStatus, localDbStatus: 'draft');
+    if (_draftId == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Could not save draft locally.')));
       return;
     }
 
-    await _saveDraft();
-    if (_draftId == null) return;
-
-    // Attempt immediate remote update if we have a remote survey id
+    // Now, attempt to upload to the server immediately.
     final token = await AuthService().getToken();
     var uploaded = false;
-    if (_remoteSurveyId != null) {
-      final payload = _collectPayload();
+    if (_remoteSurveyId != null && token != null) {
+      final payload = _collectPayload()..['status'] = surveyStatus;
       try {
         uploaded = await VillageService().updateSurvey(_remoteSurveyId!, payload, _villagePhotoPath, bearerToken: token);
       } catch (_) {
         uploaded = false;
       }
     }
+    
+    String message;
+    if (uploaded) {
+      // If upload was successful, we can remove the entry from the local DB queue.
+      await LocalDb().deleteEntry(_draftId!);
+      message = surveyStatus == 'draft' ? 'Draft saved to server successfully' : 'Survey submitted successfully';
+    } else {
+      // If upload failed, it remains in the local DB to be synced later.
+      // Update the local status to 'pending' so it shows up on the LocalEntriesPage.
+      await _saveToLocalDb(surveyStatus: surveyStatus, localDbStatus: 'pending');
+      message = 'Saved locally. Will sync with server later.';
+    }
 
-    // Update local DB status according to result
-    await LocalDb().updateEntry(_draftId!, {'status': uploaded ? 'uploaded' : 'pending'});
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uploaded ? 'Uploaded successfully' : 'Saved and queued for upload')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     Navigator.of(context).pop();
+  }
+
+  Future<void> _handleSubmit() async {
+    // Validate mandatory radio buttons before submitting as 'completed'
+    if (hasAsphaltRoad == null || hasRawRoad == null || hasWaterSystem == null || hasDrainage == null || hasElectricity == null || hasWasteDisposal == null || hasWaterStorage == null || hasPublicWell == null || hasPublicPond == null || hasWaterForCattle == null || hasPrimarySchool == null || hasSecondarySchool == null || hasHigherSecondary == null || hasCollege == null || hasUniversity == null || hasAnganwadi == null || hasItc == null || hasDispensary == null || hasPhc == null || hasGovHospital == null || hasPrivateHospital == null || hasDrugStore == null || hasAnimalHospital == null || hasCommunityHall == null || hasFairPriceShop == null || hasGroceryMarket == null || hasVegetableMarket == null || hasGrindingMill == null || hasRestaurant == null || hasPublicTransport == null || hasCooperative == null || hasPublicGarden == null || hasCinema == null || hasColdStorage == null || hasSportsGround == null || hasTemple == null || hasMosque == null || hasOtherReligious == null || hasCremation == null || hasCemetery == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please answer all mandatory (Yes/No) questions in the Infrastructure section.'), backgroundColor: Colors.red));
+      setState(() => _currentStep = 4); // Navigate to the infrastructure step
+      return;
+    }
+    await _processSubmission(surveyStatus: 'completed');
+  }
+
+  Future<void> _handleSaveDraft() async {
+    await _processSubmission(surveyStatus: 'draft');
   }
 
   Future<void> _capturePhotoAndTag() async {
@@ -758,7 +770,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         _lng = lng as double?;
         _gpsLocation = '$_lat,$_lng';
       }
-      await _saveDraft();
+      await _saveToLocalDb(surveyStatus: 'draft', localDbStatus: 'draft'); // Save draft after taking photo
       setState(() {});
     }
   }
@@ -1205,17 +1217,6 @@ class _VillageFormPageState extends State<VillageFormPage> {
             ),
           ],
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _status,
-            decoration: const InputDecoration(labelText: 'Status'),
-            items: ['draft', 'completed'].map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value[0].toUpperCase() + value.substring(1)),
-              );
-            }).toList(),
-            onChanged: (String? newValue) => setState(() => _status = newValue ?? 'draft'),
-          ),
         ]),
         isActive: _currentStep == 5,
       ),
@@ -1236,9 +1237,16 @@ class _VillageFormPageState extends State<VillageFormPage> {
         minimum: const EdgeInsets.all(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: ElevatedButton(
-            onPressed: _submit,
-            child: const Text('Submit'),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(onPressed: _handleSaveDraft, child: const Text('Save Draft')),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(onPressed: _handleSubmit, child: const Text('Submit')),
+              ),
+            ],
           ),
         ),
       ),
