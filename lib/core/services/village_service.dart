@@ -135,13 +135,9 @@ class VillageService {
 
       directMappings.forEach((payloadKey, apiKey) {
         if (payload.containsKey(payloadKey)) {
-          if (payloadKey.toLowerCase().endsWith('count')) {
-            map[apiKey] = payload[payloadKey] ?? 0;
-          } else if (floatFields.contains(payloadKey)) {
-            map[apiKey] = double.tryParse(payload[payloadKey]?.toString() ?? '0.0') ?? 0.0;
-          } else {
-            map[apiKey] = payload[payloadKey] ?? '';
-          }
+          // Pass the value directly. If it's null from the form, it will be null here.
+          // The _collectPayload method now handles parsing, so we don't need to default here.
+          map[apiKey] = payload[payloadKey];
         }
       });
 
