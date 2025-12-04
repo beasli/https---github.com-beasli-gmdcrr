@@ -1,8 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import '../config/env.dart';
 import '../utils/url_builder.dart';
-import 'package:path/path.dart';
-// path package was removed; keep imports minimal
 
 class VillageService {
   final Dio _dio = Dio();
@@ -29,19 +29,19 @@ class VillageService {
     return null;
   }
 
-  /// Update existing survey by id using multipart/form-data as the API expects.
+  /// Update existing survey by id using application/json as the API expects.
   Future<bool> updateSurvey(int id, Map<String, dynamic> payload, String? imagePath, {String? bearerToken}) async {
     try {
       final map = <String, dynamic>{};
 
-      // Helper to convert various "truthy" values to 1, otherwise 0.
-      int toInt(dynamic value) {
-        if (value == null) return 0;
-        if (value is bool) return value ? 1 : 0;
-        if (value is num) return value > 0 ? 1 : 0;
+      // Helper to convert various "truthy" values to a boolean.
+      bool toBool(dynamic value) {
+        if (value == null) return false;
+        if (value is bool) return value;
+        if (value is num) return value > 0;
         final str = value.toString().toLowerCase();
-        if (str == 'true' || str == '1') return 1;
-        return 0;
+        if (str == 'true' || str == '1') return true;
+        return false;
       }
 
       // Direct mappings
@@ -68,8 +68,11 @@ class VillageService {
         'businessFamilies': 'private_business_families',
         'unemployedFamilies': 'unemployed_families',
         'nearestCity': 'nearest_city',
+        'distanceToCity': 'distance_to_nearest_city',
         'talukaHeadquarters': 'taluka_headquarters',
+        'distanceToHQ': 'distance_to_taluka_headquarters',
         'districtHeadquarters': 'district_headquarters',
+        'distanceToDistrictHQ': 'distance_to_district_headquarters',
         'busStation': 'bus_station',
         'railwayStation': 'railway_station',
         'postOffice': 'post_office',
@@ -116,11 +119,26 @@ class VillageService {
         'publicPondCount': 'public_pond_count',
         'waterForCattleCount': 'water_for_cattle_count',
       };
+      
+      final floatFields = {
+        'totalArea',
+        'agriLand',
+        'irrigatedLand',
+        'unirrigatedLand',
+        'residentialLand',
+        'waterArea',
+        'stonyArea',
+        'distanceToCity',
+        'distanceToHQ',
+        'distanceToDistrictHQ',
+      };
 
       directMappings.forEach((payloadKey, apiKey) {
         if (payload.containsKey(payloadKey)) {
           if (payloadKey.toLowerCase().endsWith('count')) {
             map[apiKey] = payload[payloadKey] ?? 0;
+          } else if (floatFields.contains(payloadKey)) {
+            map[apiKey] = double.tryParse(payload[payloadKey]?.toString() ?? '0.0') ?? 0.0;
           } else {
             map[apiKey] = payload[payloadKey] ?? '';
           }
@@ -180,7 +198,7 @@ class VillageService {
 
       booleanMappings.forEach((payloadKey, apiKey) {
         if (payload[payloadKey] != null) {
-          map[apiKey] = toInt(payload[payloadKey]);
+          map[apiKey] = toBool(payload[payloadKey]);
         }
       });
 
@@ -189,22 +207,26 @@ class VillageService {
       if (payload['gps'] != null) {
         final gps = payload['gps'].toString().split(',');
         if (gps.length >= 2) {
-          map['lat'] = gps[0];
-          map['lon'] = gps[1];
+          map['lat'] = double.tryParse(gps[0]);
+          map['lon'] = double.tryParse(gps[1]);
         }
       }
 
-      // Attachments & image file field (must be MultipartFile for Dio)
-    if (imagePath != null && imagePath.isNotEmpty) {
-      map['files'] = await MultipartFile.fromFile(imagePath, filename: basename(imagePath));
-    }
+      // Attachments & image file field (base64 encoded for JSON)
+      if (imagePath != null && imagePath.isNotEmpty) {
+        final file = File(imagePath);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          map['files'] = base64Encode(bytes);
+        }
+      }
 
-  final headers = <String, dynamic>{'accept': '*/*'};
+      final headers = <String, dynamic>{'accept': 'application/json', 'Content-Type': 'application/json'};
       if (bearerToken != null && bearerToken.isNotEmpty) headers['Authorization'] = 'Bearer $bearerToken';
 
       final res = await _dio.put(
         '${AppConfig.baseUrl}/village-survey/$id',
-        data: FormData.fromMap(map),
+        data: map,
         options: Options(headers: headers),
       );
       return res.statusCode == 200 || res.statusCode == 201;

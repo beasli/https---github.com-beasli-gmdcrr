@@ -81,27 +81,27 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
   // Infrastructure
   // 5.1 Roads, Water & Utilities
-  bool hasAsphaltRoad = false;
-  bool hasRawRoad = false;
-  bool hasWaterSystem = false;
-  bool hasDrainage = false;
-  bool hasElectricity = false;
-  bool hasWasteDisposal = false;
+  bool? hasAsphaltRoad;
+  bool? hasRawRoad;
+  bool? hasWaterSystem;
+  bool? hasDrainage;
+  bool? hasElectricity;
+  bool? hasWasteDisposal;
   final _asphaltRoadCount = TextEditingController();
   final _rawRoadCount = TextEditingController();
   final _waterSystemCount = TextEditingController();
   final _drainageSystemCount = TextEditingController();
   final _electricitySystemCount = TextEditingController();
   final _wasteDisposalCount = TextEditingController();
-
+  
   // 5.2 Public Water Sources (counts)
   final _waterStorageCount = TextEditingController();
   final _publicWellCount = TextEditingController();
   final _publicPondCount = TextEditingController();
   final _waterForCattleCount = TextEditingController();
   // availability toggles for 5.2
-  bool hasPublicWaterSources = false;
-
+  bool? hasPublicWaterSources;
+  
   // 5.3 Education Facilities (counts)
   final _primarySchoolCount = TextEditingController();
   final _secondarySchoolCount = TextEditingController();
@@ -111,8 +111,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final _anganwadiCount = TextEditingController();
   final _itcCount = TextEditingController();
   // availability toggle for education
-  bool hasEducationFacilities = false;
-
+  bool? hasEducationFacilities;
+  
   // 5.4 Health Facilities (counts)
   final _dispensaryCount = TextEditingController();
   final _phcCount = TextEditingController();
@@ -121,8 +121,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final _drugStoreCount = TextEditingController();
   final _animalHospitalCount = TextEditingController();
   // availability toggle for health
-  bool hasHealthFacilities = false;
-
+  bool? hasHealthFacilities;
+  
   // 5.5 Markets, Community & Services
   final _communityHallCount = TextEditingController();
   final _fairPriceShopCount = TextEditingController();
@@ -137,8 +137,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final _coldStorageCount = TextEditingController();
   final _sportsGroundCount = TextEditingController();
   // availability toggle for markets/services
-  bool hasMarketsServices = false;
-
+  bool? hasMarketsServices;
+  
   // 5.6 Religious/Mortality Facilities
   final _templeCount = TextEditingController();
   final _mosqueCount = TextEditingController();
@@ -146,7 +146,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final _cremationGroundCount = TextEditingController();
   final _cemeteryCount = TextEditingController();
   // availability toggle for religious/mortality
-  bool hasReligiousFacilities = false;
+  bool? hasReligiousFacilities;
 
   // Attachments & GPS
   String? _gpsLocation;
@@ -537,92 +537,95 @@ class _VillageFormPageState extends State<VillageFormPage> {
     'businessFamilies': int.tryParse(_familiesBusinessCtrl.text),
     'unemployedFamilies': int.tryParse(_familiesUnemployedCtrl.text),
     'nearestCity': _nearestCity.text,
+    'distanceToCity': int.tryParse(_distanceToCity.text),
     'talukaHeadquarters': _headquartersName.text,
+    'distanceToHQ': int.tryParse(_distanceToHQ.text),
     'districtHeadquarters': _districtHeadquartersName.text,
+    'distanceToDistrictHQ': int.tryParse(_distanceToDistrictHQ.text),
     'busStation': _busStationDetails.text,
     'railwayStation': _railwayStationDetails.text,
     'postOffice': _postOfficeDetails.text,
     'policeStation': _policeStationDetails.text,
     'bank': _bankDetails.text,
-    'hasAsphaltRoad': hasAsphaltRoad,
+    'hasAsphaltRoad': hasAsphaltRoad ?? false,
     'asphaltRoadCount': int.tryParse(_asphaltRoadCount.text),
-    'hasRawRoad': hasRawRoad,
+    'hasRawRoad': hasRawRoad ?? false,
     'rawRoadCount': int.tryParse(_rawRoadCount.text),
-    'hasWaterSystem': hasWaterSystem,
+    'hasWaterSystem': hasWaterSystem ?? false,
     'waterSystemCount': int.tryParse(_waterSystemCount.text),
-    'hasDrainage': hasDrainage,
+    'hasDrainage': hasDrainage ?? false,
     'drainageSystemCount': int.tryParse(_drainageSystemCount.text),
-    'hasElectricity': hasElectricity,
+    'hasElectricity': hasElectricity ?? false,
     'electricitySystemCount': int.tryParse(_electricitySystemCount.text),
-    'hasWasteDisposal': hasWasteDisposal,
+    'hasWasteDisposal': hasWasteDisposal ?? false,
     'wasteDisposalCount': int.tryParse(_wasteDisposalCount.text),
-    'hasWaterStorage': (int.tryParse(_waterStorageCount.text) ?? 0) > 0,
+    'hasWaterStorage': (hasPublicWaterSources ?? false) && (int.tryParse(_waterStorageCount.text) ?? 0) > 0,
     'waterStorageCount': int.tryParse(_waterStorageCount.text),
-    'hasPublicWell': (int.tryParse(_publicWellCount.text) ?? 0) > 0,
+    'hasPublicWell': (hasPublicWaterSources ?? false) && (int.tryParse(_publicWellCount.text) ?? 0) > 0,
     'publicWellCount': int.tryParse(_publicWellCount.text),
-    'hasPublicPond': (int.tryParse(_publicPondCount.text) ?? 0) > 0,
+    'hasPublicPond': (hasPublicWaterSources ?? false) && (int.tryParse(_publicPondCount.text) ?? 0) > 0,
     'publicPondCount': int.tryParse(_publicPondCount.text),
-    'hasWaterForCattle': (int.tryParse(_waterForCattleCount.text) ?? 0) > 0,
+    'hasWaterForCattle': (hasPublicWaterSources ?? false) && (int.tryParse(_waterForCattleCount.text) ?? 0) > 0,
     'waterForCattleCount': int.tryParse(_waterForCattleCount.text),
-    'hasPrimarySchool': (int.tryParse(_primarySchoolCount.text) ?? 0) > 0,
+    'hasPrimarySchool': (hasEducationFacilities ?? false) && (int.tryParse(_primarySchoolCount.text) ?? 0) > 0,
     'primarySchoolCount': int.tryParse(_primarySchoolCount.text),
-    'hasSecondarySchool': (int.tryParse(_secondarySchoolCount.text) ?? 0) > 0,
+    'hasSecondarySchool': (hasEducationFacilities ?? false) && (int.tryParse(_secondarySchoolCount.text) ?? 0) > 0,
     'secondarySchoolCount': int.tryParse(_secondarySchoolCount.text),
-    'hasHigherSecondary': (int.tryParse(_higherSecondaryCount.text) ?? 0) > 0,
+    'hasHigherSecondary': (hasEducationFacilities ?? false) && (int.tryParse(_higherSecondaryCount.text) ?? 0) > 0,
     'higherSecondarySchoolCount': int.tryParse(_higherSecondaryCount.text),
-    'hasCollege': (int.tryParse(_collegeCount.text) ?? 0) > 0,
+    'hasCollege': (hasEducationFacilities ?? false) && (int.tryParse(_collegeCount.text) ?? 0) > 0,
     'collegeCount': int.tryParse(_collegeCount.text),
-    'hasUniversity': (int.tryParse(_universityCount.text) ?? 0) > 0,
+    'hasUniversity': (hasEducationFacilities ?? false) && (int.tryParse(_universityCount.text) ?? 0) > 0,
     'universityCount': int.tryParse(_universityCount.text),
-    'hasAnganwadi': (int.tryParse(_anganwadiCount.text) ?? 0) > 0,
+    'hasAnganwadi': (hasEducationFacilities ?? false) && (int.tryParse(_anganwadiCount.text) ?? 0) > 0,
     'anganwadiCount': int.tryParse(_anganwadiCount.text),
-    'hasItc': (int.tryParse(_itcCount.text) ?? 0) > 0,
+    'hasItc': (hasEducationFacilities ?? false) && (int.tryParse(_itcCount.text) ?? 0) > 0,
     'itcCount': int.tryParse(_itcCount.text),
-    'hasDispensary': (int.tryParse(_dispensaryCount.text) ?? 0) > 0,
+    'hasDispensary': (hasHealthFacilities ?? false) && (int.tryParse(_dispensaryCount.text) ?? 0) > 0,
     'dispensaryCount': int.tryParse(_dispensaryCount.text),
-    'hasPhc': (int.tryParse(_phcCount.text) ?? 0) > 0,
+    'hasPhc': (hasHealthFacilities ?? false) && (int.tryParse(_phcCount.text) ?? 0) > 0,
     'phcCount': int.tryParse(_phcCount.text),
-    'hasGovHospital': (int.tryParse(_govHospitalCount.text) ?? 0) > 0,
+    'hasGovHospital': (hasHealthFacilities ?? false) && (int.tryParse(_govHospitalCount.text) ?? 0) > 0,
     'govHospitalCount': int.tryParse(_govHospitalCount.text),
-    'hasPrivateHospital': (int.tryParse(_privateHospitalCount.text) ?? 0) > 0,
+    'hasPrivateHospital': (hasHealthFacilities ?? false) && (int.tryParse(_privateHospitalCount.text) ?? 0) > 0,
     'privateHospitalCount': int.tryParse(_privateHospitalCount.text),
-    'hasDrugStore': (int.tryParse(_drugStoreCount.text) ?? 0) > 0,
+    'hasDrugStore': (hasHealthFacilities ?? false) && (int.tryParse(_drugStoreCount.text) ?? 0) > 0,
     'drugStoreCount': int.tryParse(_drugStoreCount.text),
-    'hasAnimalHospital': (int.tryParse(_animalHospitalCount.text) ?? 0) > 0,
+    'hasAnimalHospital': (hasHealthFacilities ?? false) && (int.tryParse(_animalHospitalCount.text) ?? 0) > 0,
     'animalHospitalCount': int.tryParse(_animalHospitalCount.text),
-    'hasCommunityHall': (int.tryParse(_communityHallCount.text) ?? 0) > 0,
+    'hasCommunityHall': (hasMarketsServices ?? false) && (int.tryParse(_communityHallCount.text) ?? 0) > 0,
     'communityHallCount': int.tryParse(_communityHallCount.text),
-    'hasFairPriceShop': (int.tryParse(_fairPriceShopCount.text) ?? 0) > 0,
+    'hasFairPriceShop': (hasMarketsServices ?? false) && (int.tryParse(_fairPriceShopCount.text) ?? 0) > 0,
     'fairPriceShopCount': int.tryParse(_fairPriceShopCount.text),
-    'hasGroceryMarket': (int.tryParse(_groceryMarketCount.text) ?? 0) > 0,
+    'hasGroceryMarket': (hasMarketsServices ?? false) && (int.tryParse(_groceryMarketCount.text) ?? 0) > 0,
     'groceryMarketCount': int.tryParse(_groceryMarketCount.text),
-    'hasVegetableMarket': (int.tryParse(_vegetableMarketCount.text) ?? 0) > 0,
+    'hasVegetableMarket': (hasMarketsServices ?? false) && (int.tryParse(_vegetableMarketCount.text) ?? 0) > 0,
     'vegetableMarketCount': int.tryParse(_vegetableMarketCount.text),
-    'hasGrindingMill': (int.tryParse(_grindingMillCount.text) ?? 0) > 0,
+    'hasGrindingMill': (hasMarketsServices ?? false) && (int.tryParse(_grindingMillCount.text) ?? 0) > 0,
     'grindingMillCount': int.tryParse(_grindingMillCount.text),
-    'hasRestaurant': (int.tryParse(_restaurantCount.text) ?? 0) > 0,
+    'hasRestaurant': (hasMarketsServices ?? false) && (int.tryParse(_restaurantCount.text) ?? 0) > 0,
     'restaurantCount': int.tryParse(_restaurantCount.text),
-    'hasPublicTransport': (int.tryParse(_publicTransportCount.text) ?? 0) > 0,
+    'hasPublicTransport': (hasMarketsServices ?? false) && (int.tryParse(_publicTransportCount.text) ?? 0) > 0,
     'publicTransportCount': int.tryParse(_publicTransportCount.text),
-    'hasCooperative': (int.tryParse(_cooperativeCount.text) ?? 0) > 0,
+    'hasCooperative': (hasMarketsServices ?? false) && (int.tryParse(_cooperativeCount.text) ?? 0) > 0,
     'cooperativeCount': int.tryParse(_cooperativeCount.text),
-    'hasPublicGarden': (int.tryParse(_publicGardenCount.text) ?? 0) > 0,
+    'hasPublicGarden': (hasMarketsServices ?? false) && (int.tryParse(_publicGardenCount.text) ?? 0) > 0,
     'publicGardenCount': int.tryParse(_publicGardenCount.text),
-    'hasCinema': (int.tryParse(_cinemaCount.text) ?? 0) > 0,
+    'hasCinema': (hasMarketsServices ?? false) && (int.tryParse(_cinemaCount.text) ?? 0) > 0,
     'cinemaCount': int.tryParse(_cinemaCount.text),
-    'hasColdStorage': (int.tryParse(_coldStorageCount.text) ?? 0) > 0,
+    'hasColdStorage': (hasMarketsServices ?? false) && (int.tryParse(_coldStorageCount.text) ?? 0) > 0,
     'coldStorageCount': int.tryParse(_coldStorageCount.text),
-    'hasSportsGround': (int.tryParse(_sportsGroundCount.text) ?? 0) > 0,
+    'hasSportsGround': (hasMarketsServices ?? false) && (int.tryParse(_sportsGroundCount.text) ?? 0) > 0,
     'sportsGroundCount': int.tryParse(_sportsGroundCount.text),
-    'hasTemple': (int.tryParse(_templeCount.text) ?? 0) > 0,
+    'hasTemple': (hasReligiousFacilities ?? false) && (int.tryParse(_templeCount.text) ?? 0) > 0,
     'templeCount': int.tryParse(_templeCount.text),
-    'hasMosque': (int.tryParse(_mosqueCount.text) ?? 0) > 0,
+    'hasMosque': (hasReligiousFacilities ?? false) && (int.tryParse(_mosqueCount.text) ?? 0) > 0,
     'mosqueCount': int.tryParse(_mosqueCount.text),
-    'hasOtherReligious': (int.tryParse(_otherReligiousCount.text) ?? 0) > 0,
+    'hasOtherReligious': (hasReligiousFacilities ?? false) && (int.tryParse(_otherReligiousCount.text) ?? 0) > 0,
     'otherReligiousCount': int.tryParse(_otherReligiousCount.text),
-    'hasCremation': (int.tryParse(_cremationGroundCount.text) ?? 0) > 0,
+    'hasCremation': (hasReligiousFacilities ?? false) && (int.tryParse(_cremationGroundCount.text) ?? 0) > 0,
     'cremationCount': int.tryParse(_cremationGroundCount.text),
-    'hasCemetery': (int.tryParse(_cemeteryCount.text) ?? 0) > 0,
+    'hasCemetery': (hasReligiousFacilities ?? false) && (int.tryParse(_cemeteryCount.text) ?? 0) > 0,
     'cemeteryCount': int.tryParse(_cemeteryCount.text),
     'photo': _villagePhotoPath,
     'gps': _gpsLocation,
@@ -642,6 +645,19 @@ class _VillageFormPageState extends State<VillageFormPage> {
   }
 
   Future<void> _submit() async {
+    // Validate mandatory radio buttons
+    if (hasAsphaltRoad == null || hasRawRoad == null || hasWaterSystem == null || hasDrainage == null || hasElectricity == null || hasWasteDisposal == null || hasPublicWaterSources == null || hasEducationFacilities == null || hasHealthFacilities == null || hasMarketsServices == null || hasReligiousFacilities == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please answer all mandatory (Yes/No) questions in the Infrastructure section.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      // Navigate to the infrastructure step
+      setState(() => _currentStep = 4);
+      return;
+    }
+
     await _saveDraft();
     if (_draftId == null) return;
 
@@ -735,10 +751,10 @@ class _VillageFormPageState extends State<VillageFormPage> {
       Step(
         title: const Text('General Identification'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village name')),
-          TextFormField(controller: _gpCtrl, decoration: const InputDecoration(labelText: 'Gram Panchayat')),
-          TextFormField(controller: _talukaCtrl, decoration: const InputDecoration(labelText: 'Taluka')),
-          TextFormField(controller: _districtCtrl, decoration: const InputDecoration(labelText: 'District')),
+          TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village name'), readOnly: true),
+          TextFormField(controller: _gpCtrl, decoration: const InputDecoration(labelText: 'Gram Panchayat'), readOnly: true),
+          TextFormField(controller: _talukaCtrl, decoration: const InputDecoration(labelText: 'Taluka'), readOnly: true),
+          TextFormField(controller: _districtCtrl, decoration: const InputDecoration(labelText: 'District'), readOnly: true),
           TextFormField(controller: _totalPopulationCtrl, decoration: const InputDecoration(labelText: 'Population'), keyboardType: TextInputType.number),
         ]),
         isActive: _currentStep == 0,
@@ -813,43 +829,49 @@ class _VillageFormPageState extends State<VillageFormPage> {
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // 5.1 Roads, Water & Utilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          Row(children: [
-            Expanded(child: CheckboxListTile(title: const Text('Approach Asphalt Road *'), value: hasAsphaltRoad, tristate: true, onChanged: (v) => setState(() => hasAsphaltRoad = v ?? false))),
-            const SizedBox(width: 8),
-            ]),
-          Row(children: [
-            Expanded(child: CheckboxListTile(title: const Text('Approach Raw Road *'), value: hasRawRoad, tristate: true, onChanged: (v) => setState(() => hasRawRoad = v ?? false))),
-             const SizedBox(width: 8),
-          ]),
-          Row(children: [
-            Expanded(child: CheckboxListTile(title: const Text('Water system available *'), value: hasWaterSystem, tristate: true, onChanged: (v) => setState(() => hasWaterSystem = v ?? false))),
-            const SizedBox(width: 8),
-            ]),
-          Row(children: [
-            Expanded(child: CheckboxListTile(title: const Text('Drainage system available *'), value: hasDrainage, tristate: true, onChanged: (v) => setState(() => hasDrainage = v ?? false))),
-            const SizedBox(width: 8),
-          ]),
-          Row(children: [
-            Expanded(child: CheckboxListTile(title: const Text('Electricity system available *'), value: hasElectricity, tristate: true, onChanged: (v) => setState(() => hasElectricity = v ?? false))),
-            const SizedBox(width: 8),
-            ]),
-          Row(children: [
-            Expanded(child: CheckboxListTile(title: const Text('Public system for waste disposal *'), value: hasWasteDisposal, tristate: true, onChanged: (v) => setState(() => hasWasteDisposal = v ?? false))),
-            const SizedBox(width: 8),
-          ]),
-          TextFormField(controller: _asphaltRoadCount, decoration: const InputDecoration(labelText: 'Approach Asphalt Road (length/coverage)', hintText: 'Enter length/coverage if available'), keyboardType: TextInputType.number),
-          TextFormField(controller: _rawRoadCount, decoration: const InputDecoration(labelText: 'Approach Raw Road (length/coverage)', hintText: 'Enter length/coverage if available'), keyboardType: TextInputType.number),
-          TextFormField(controller: _waterSystemCount, decoration: const InputDecoration(labelText: 'Water system (length/coverage)', hintText: 'Enter length/coverage if available'), keyboardType: TextInputType.number),
-          TextFormField(controller: _drainageSystemCount, decoration: const InputDecoration(labelText: 'Drainage system (length/coverage)', hintText: 'Enter length/coverage if available'), keyboardType: TextInputType.number),
-          TextFormField(controller: _electricitySystemCount, decoration: const InputDecoration(labelText: 'Electricity system (length/coverage)', hintText: 'Enter length/coverage if available'), keyboardType: TextInputType.number),
-          TextFormField(controller: _wasteDisposalCount, decoration: const InputDecoration(labelText: 'Public system for waste disposal (length/coverage)', hintText: 'Enter length/coverage if available'), keyboardType: TextInputType.number),
+          _buildRadioGroup('Approach Asphalt Road *', hasAsphaltRoad, (val) => setState(() => hasAsphaltRoad = val)),
+          if (hasAsphaltRoad == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _asphaltRoadCount, decoration: const InputDecoration(labelText: 'Approach Asphalt Road (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Approach Raw Road *', hasRawRoad, (val) => setState(() => hasRawRoad = val)),
+          if (hasRawRoad == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _rawRoadCount, decoration: const InputDecoration(labelText: 'Approach Raw Road (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Water system available *', hasWaterSystem, (val) => setState(() => hasWaterSystem = val)),
+          if (hasWaterSystem == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _waterSystemCount, decoration: const InputDecoration(labelText: 'Water system (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Drainage system available *', hasDrainage, (val) => setState(() => hasDrainage = val)),
+          if (hasDrainage == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _drainageSystemCount, decoration: const InputDecoration(labelText: 'Drainage system (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Electricity system available *', hasElectricity, (val) => setState(() => hasElectricity = val)),
+          if (hasElectricity == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _electricitySystemCount, decoration: const InputDecoration(labelText: 'Electricity system (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Public system for waste disposal *', hasWasteDisposal, (val) => setState(() => hasWasteDisposal = val)),
+          if (hasWasteDisposal == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _wasteDisposalCount, decoration: const InputDecoration(labelText: 'Public system for waste disposal (Detail/Count)', hintText: 'Enter Detail/Count if available'), keyboardType: TextInputType.number),
+            ),
 
           const SizedBox(height: 12),
           // 5.2 Public Water Sources
           InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          CheckboxListTile(title: const Text('Public water sources available'), value: hasPublicWaterSources, onChanged: (v) => setState(() => hasPublicWaterSources = v ?? false)),
+          _buildRadioGroup('Public water sources available *', hasPublicWaterSources, (val) => setState(() => hasPublicWaterSources = val)),
           Visibility(
-            visible: hasPublicWaterSources,
+            visible: hasPublicWaterSources == true,
             child: Column(children: [
               TextFormField(controller: _waterStorageCount, decoration: const InputDecoration(labelText: 'Water Storage Arrangement (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
               TextFormField(controller: _publicWellCount, decoration: const InputDecoration(labelText: 'Public Well (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
@@ -861,9 +883,9 @@ class _VillageFormPageState extends State<VillageFormPage> {
           const SizedBox(height: 12),
           // 5.3 Education Facilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          CheckboxListTile(title: const Text('Education facilities available'), value: hasEducationFacilities, onChanged: (v) => setState(() => hasEducationFacilities = v ?? false)),
+          _buildRadioGroup('Education facilities available *', hasEducationFacilities, (val) => setState(() => hasEducationFacilities = val)),
           Visibility(
-            visible: hasEducationFacilities,
+            visible: hasEducationFacilities == true,
             child: Column(children: [
               TextFormField(controller: _primarySchoolCount, decoration: const InputDecoration(labelText: 'Primary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
               TextFormField(controller: _secondarySchoolCount, decoration: const InputDecoration(labelText: 'Secondary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
@@ -878,9 +900,9 @@ class _VillageFormPageState extends State<VillageFormPage> {
           const SizedBox(height: 12),
           // 5.4 Health Facilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          CheckboxListTile(title: const Text('Health facilities available'), value: hasHealthFacilities, onChanged: (v) => setState(() => hasHealthFacilities = v ?? false)),
+          _buildRadioGroup('Health facilities available *', hasHealthFacilities, (val) => setState(() => hasHealthFacilities = val)),
           Visibility(
-            visible: hasHealthFacilities,
+            visible: hasHealthFacilities == true,
             child: Column(children: [
               TextFormField(controller: _dispensaryCount, decoration: const InputDecoration(labelText: 'Dispensary (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
               TextFormField(controller: _phcCount, decoration: const InputDecoration(labelText: 'Primary Health Centre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
@@ -894,9 +916,9 @@ class _VillageFormPageState extends State<VillageFormPage> {
           const SizedBox(height: 12),
           // 5.5 Markets, Community & Services
           InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count/detail if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          CheckboxListTile(title: const Text('Markets / community services available'), value: hasMarketsServices, onChanged: (v) => setState(() => hasMarketsServices = v ?? false)),
+          _buildRadioGroup('Markets / community services available *', hasMarketsServices, (val) => setState(() => hasMarketsServices = val)),
           Visibility(
-            visible: hasMarketsServices,
+            visible: hasMarketsServices == true,
             child: Column(children: [
               TextFormField(controller: _communityHallCount, decoration: const InputDecoration(labelText: 'Community Hall (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
               TextFormField(controller: _fairPriceShopCount, decoration: const InputDecoration(labelText: 'Fair price shop (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
@@ -916,9 +938,9 @@ class _VillageFormPageState extends State<VillageFormPage> {
           const SizedBox(height: 12),
           // 5.6 Religious/Mortality Facilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count/detail if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          CheckboxListTile(title: const Text('Religious / mortality facilities available'), value: hasReligiousFacilities, onChanged: (v) => setState(() => hasReligiousFacilities = v ?? false)),
+          _buildRadioGroup('Religious / mortality facilities available *', hasReligiousFacilities, (val) => setState(() => hasReligiousFacilities = val)),
           Visibility(
-            visible: hasReligiousFacilities,
+            visible: hasReligiousFacilities == true,
             child: Column(children: [
               TextFormField(controller: _templeCount, decoration: const InputDecoration(labelText: 'Religious Places: Temple (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
               TextFormField(controller: _mosqueCount, decoration: const InputDecoration(labelText: 'Religious Places: Mosque (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
@@ -1015,7 +1037,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
           DropdownButtonFormField<String>(
             value: _status,
             decoration: const InputDecoration(labelText: 'Status'),
-            items: ['draft', 'completed', 'verified'].map((String value) {
+            items: ['draft', 'completed'].map((String value) {
               return DropdownMenuItem<String>(
                 value: value,
                 child: Text(value[0].toUpperCase() + value.substring(1)),
@@ -1041,29 +1063,41 @@ class _VillageFormPageState extends State<VillageFormPage> {
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(8),
-        child: Row(children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _currentStep > 0 ? () { setState(() => _currentStep -= 1); } : null,
-              child: const Text('Back'),
-            ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: ElevatedButton(
+            onPressed: _submit,
+            child: const Text('Submit'),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () async {
-                if (_currentStep < steps.length - 1) {
-                  setState(() => _currentStep += 1);
-                  await _saveDraft();
-                } else {
-                  await _submit();
-                }
-              },
-              child: Text(_currentStep < steps.length - 1 ? 'Next' : 'Submit'),
-            ),
-          ),
-        ]),
+        ),
       ),
+    );
+  }
+
+  Widget _buildRadioGroup(String title, bool? groupValue, ValueChanged<bool?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+          child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: RadioListTile<bool>(
+                title: const Text('Yes'),
+                value: true,
+                groupValue: groupValue,
+                onChanged: onChanged,
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<bool>(title: const Text('No'), value: false, groupValue: groupValue, onChanged: onChanged),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
