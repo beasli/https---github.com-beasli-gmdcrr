@@ -22,7 +22,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
   int _currentStep = 0;
   int? _draftId;
   int? _remoteSurveyId;
-  bool _loadingRemote = false;
+  bool _isInitializing = true;
   List<Map<String, dynamic>> _remoteMedia = [];
 
   // Location
@@ -95,14 +95,23 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final _wasteDisposalCount = TextEditingController();
   
   // 5.2 Public Water Sources (counts)
+  bool? hasWaterStorage;
+  bool? hasPublicWell;
+  bool? hasPublicPond;
+  bool? hasWaterForCattle;
   final _waterStorageCount = TextEditingController();
   final _publicWellCount = TextEditingController();
   final _publicPondCount = TextEditingController();
   final _waterForCattleCount = TextEditingController();
-  // availability toggles for 5.2
-  bool? hasPublicWaterSources;
   
   // 5.3 Education Facilities (counts)
+  bool? hasPrimarySchool;
+  bool? hasSecondarySchool;
+  bool? hasHigherSecondary;
+  bool? hasCollege;
+  bool? hasUniversity;
+  bool? hasAnganwadi;
+  bool? hasItc;
   final _primarySchoolCount = TextEditingController();
   final _secondarySchoolCount = TextEditingController();
   final _higherSecondaryCount = TextEditingController();
@@ -110,20 +119,34 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final _universityCount = TextEditingController();
   final _anganwadiCount = TextEditingController();
   final _itcCount = TextEditingController();
-  // availability toggle for education
-  bool? hasEducationFacilities;
   
   // 5.4 Health Facilities (counts)
+  bool? hasDispensary;
+  bool? hasPhc;
+  bool? hasGovHospital;
+  bool? hasPrivateHospital;
+  bool? hasDrugStore;
+  bool? hasAnimalHospital;
   final _dispensaryCount = TextEditingController();
   final _phcCount = TextEditingController();
   final _govHospitalCount = TextEditingController();
   final _privateHospitalCount = TextEditingController();
   final _drugStoreCount = TextEditingController();
   final _animalHospitalCount = TextEditingController();
-  // availability toggle for health
-  bool? hasHealthFacilities;
   
   // 5.5 Markets, Community & Services
+  bool? hasCommunityHall;
+  bool? hasFairPriceShop;
+  bool? hasGroceryMarket;
+  bool? hasVegetableMarket;
+  bool? hasGrindingMill;
+  bool? hasRestaurant;
+  bool? hasPublicTransport;
+  bool? hasCooperative;
+  bool? hasPublicGarden;
+  bool? hasCinema;
+  bool? hasColdStorage;
+  bool? hasSportsGround;
   final _communityHallCount = TextEditingController();
   final _fairPriceShopCount = TextEditingController();
   final _groceryMarketCount = TextEditingController();
@@ -136,17 +159,18 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final _cinemaCount = TextEditingController();
   final _coldStorageCount = TextEditingController();
   final _sportsGroundCount = TextEditingController();
-  // availability toggle for markets/services
-  bool? hasMarketsServices;
   
   // 5.6 Religious/Mortality Facilities
+  bool? hasTemple;
+  bool? hasMosque;
+  bool? hasOtherReligious;
+  bool? hasCremation;
+  bool? hasCemetery;
   final _templeCount = TextEditingController();
   final _mosqueCount = TextEditingController();
   final _otherReligiousCount = TextEditingController();
   final _cremationGroundCount = TextEditingController();
   final _cemeteryCount = TextEditingController();
-  // availability toggle for religious/mortality
-  bool? hasReligiousFacilities;
 
   // Attachments & GPS
   String? _gpsLocation;
@@ -343,7 +367,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
           // If we have a survey id, fetch the full survey and map fields into the form
           if (_remoteSurveyId != null) {
-            _loadingRemote = true;
+            _isInitializing = true;
             if (mounted) setState(() {});
             try {
               final token2 = await AuthService().getToken();
@@ -404,62 +428,91 @@ class _VillageFormPageState extends State<VillageFormPage> {
                   _bankDetails.text = d['bank']?.toString() ?? _bankDetails.text;
 
                   // infrastructure booleans and counts
-                  hasAsphaltRoad = d['approach_asphalt_road'] == true;
-                  hasRawRoad = d['approach_raw_road'] == true;
-                  hasWaterSystem = d['water_system'] == true;
-                  hasDrainage = d['drainage_system'] == true;
-                  hasElectricity = d['electricity_system'] == true;
-                  hasWasteDisposal = d['public_waste_disposal'] == true;
-                  _asphaltRoadCount.text = (d['approach_asphalt_road'] == true || d['approach_asphalt_road'] == 1) ? '1' : '';
-                  _rawRoadCount.text = (d['approach_raw_road'] == true || d['approach_raw_road'] == 1) ? '1' : '';
-                  _waterSystemCount.text = (d['water_system'] == true || d['water_system'] == 1) ? '1' : '';
-                  _drainageSystemCount.text = (d['drainage_system'] == true || d['drainage_system'] == 1) ? '1' : '';
-                  _electricitySystemCount.text = (d['electricity_system'] == true || d['electricity_system'] == 1) ? '1' : '';
-                  _wasteDisposalCount.text = (d['public_waste_disposal'] == true || d['public_waste_disposal'] == 1) ? '1' : '';
+                  hasAsphaltRoad = d['approach_asphalt_road'] == true || (d['approach_asphalt_road_count'] is num && d['approach_asphalt_road_count'] > 0);
+                  _asphaltRoadCount.text = d['approach_asphalt_road_count']?.toString() ?? _asphaltRoadCount.text;
+                  hasRawRoad = d['approach_raw_road'] == true || (d['approach_raw_road_count'] is num && d['approach_raw_road_count'] > 0);
+                  _rawRoadCount.text = d['approach_raw_road_count']?.toString() ?? _rawRoadCount.text;
+                  hasWaterSystem = d['water_system'] == true || (d['water_system_count'] is num && d['water_system_count'] > 0);
+                  _waterSystemCount.text = d['water_system_count']?.toString() ?? _waterSystemCount.text;
+                  hasDrainage = d['drainage_system'] == true || (d['drainage_system_count'] is num && d['drainage_system_count'] > 0);
+                  _drainageSystemCount.text = d['drainage_system_count']?.toString() ?? _drainageSystemCount.text;
+                  hasElectricity = d['electricity_system'] == true || (d['electricity_system_count'] is num && d['electricity_system_count'] > 0);
+                  _electricitySystemCount.text = d['electricity_system_count']?.toString() ?? _electricitySystemCount.text;
+                  hasWasteDisposal = d['public_waste_disposal'] == true || (d['public_waste_disposal_count'] is num && d['public_waste_disposal_count'] > 0);
+                  _wasteDisposalCount.text = d['public_waste_disposal_count']?.toString() ?? _wasteDisposalCount.text;
 
-                  hasPublicWaterSources = (d['water_storage_arrangement'] == true || (d['water_storage_arrangement'] is num && d['water_storage_arrangement'] > 0)) || (d['public_well'] == true) || (d['public_pond'] == true) || (d['water_for_cattle'] == true);
-                  _waterStorageCount.text = (d['water_storage_arrangement'] is num) ? d['water_storage_arrangement'].toString() : _waterStorageCount.text;
-                  _publicWellCount.text = (d['public_well'] == true) ? '1' : _publicWellCount.text;
-                  _publicPondCount.text = (d['public_pond'] == true) ? '1' : _publicPondCount.text;
-                  _waterForCattleCount.text = (d['water_for_cattle'] == true) ? '1' : _waterForCattleCount.text;
+                  hasWaterStorage = d['water_storage_arrangement'] == true || (d['water_storage_arrangement_count'] is num && d['water_storage_arrangement_count'] > 0);
+                  _waterStorageCount.text = d['water_storage_arrangement_count']?.toString() ?? _waterStorageCount.text;
+                  hasPublicWell = d['public_well'] == true || (d['public_well_count'] is num && d['public_well_count'] > 0);
+                  _publicWellCount.text = d['public_well_count']?.toString() ?? _publicWellCount.text;
+                  hasPublicPond = d['public_pond'] == true || (d['public_pond_count'] is num && d['public_pond_count'] > 0);
+                  _publicPondCount.text = d['public_pond_count']?.toString() ?? _publicPondCount.text;
+                  hasWaterForCattle = d['water_for_cattle'] == true || (d['water_for_cattle_count'] is num && d['water_for_cattle_count'] > 0);
+                  _waterForCattleCount.text = d['water_for_cattle_count']?.toString() ?? _waterForCattleCount.text;
 
-                  hasEducationFacilities = (d['primary_school'] == true) || (d['secondary_school'] == true) || (d['higher_secondary_school'] == true) || (d['college'] == true) || (d['university'] == true) || (d['anganwadi'] == true) || (d['industrial_training_centre'] == true);
+                  hasPrimarySchool = d['primary_school'] == true || (d['primary_school_count'] is num && d['primary_school_count'] > 0);
                   _primarySchoolCount.text = d['primary_school_count']?.toString() ?? _primarySchoolCount.text;
+                  hasSecondarySchool = d['secondary_school'] == true || (d['secondary_school_count'] is num && d['secondary_school_count'] > 0);
                   _secondarySchoolCount.text = d['secondary_school_count']?.toString() ?? _secondarySchoolCount.text;
+                  hasHigherSecondary = d['higher_secondary_school'] == true || (d['higher_secondary_school_count'] is num && d['higher_secondary_school_count'] > 0);
                   _higherSecondaryCount.text = d['higher_secondary_school_count']?.toString() ?? _higherSecondaryCount.text;
+                  hasCollege = d['college'] == true || (d['college_count'] is num && d['college_count'] > 0);
                   _collegeCount.text = d['college_count']?.toString() ?? _collegeCount.text;
+                  hasUniversity = d['university'] == true || (d['university_count'] is num && d['university_count'] > 0);
                   _universityCount.text = d['university_count']?.toString() ?? _universityCount.text;
+                  hasAnganwadi = d['anganwadi'] == true || (d['anganwadi_count'] is num && d['anganwadi_count'] > 0);
                   _anganwadiCount.text = d['anganwadi_count']?.toString() ?? _anganwadiCount.text;
+                  hasItc = d['industrial_training_centre'] == true || (d['industrial_training_centre_count'] is num && d['industrial_training_centre_count'] > 0);
                   _itcCount.text = d['industrial_training_centre_count']?.toString() ?? _itcCount.text;
 
-                  hasHealthFacilities = (d['dispensary'] == true) || (d['primary_health_centre'] == true) || (d['government_hospital'] == true) || (d['private_hospital'] == true) || (d['drug_store'] == true) || (d['animal_hospital'] == true);
+                  hasDispensary = d['dispensary'] == true || (d['dispensary_count'] is num && d['dispensary_count'] > 0);
                   _dispensaryCount.text = d['dispensary_count']?.toString() ?? _dispensaryCount.text;
+                  hasPhc = d['primary_health_centre'] == true || (d['primary_health_centre_count'] is num && d['primary_health_centre_count'] > 0);
                   _phcCount.text = d['primary_health_centre_count']?.toString() ?? _phcCount.text;
+                  hasGovHospital = d['government_hospital'] == true || (d['government_hospital_count'] is num && d['government_hospital_count'] > 0);
                   _govHospitalCount.text = d['government_hospital_count']?.toString() ?? _govHospitalCount.text;
+                  hasPrivateHospital = d['private_hospital'] == true || (d['private_hospital_count'] is num && d['private_hospital_count'] > 0);
                   _privateHospitalCount.text = d['private_hospital_count']?.toString() ?? _privateHospitalCount.text;
+                  hasDrugStore = d['drug_store'] == true || (d['drug_store_count'] is num && d['drug_store_count'] > 0);
                   _drugStoreCount.text = d['drug_store_count']?.toString() ?? _drugStoreCount.text;
+                  hasAnimalHospital = d['animal_hospital'] == true || (d['animal_hospital_count'] is num && d['animal_hospital_count'] > 0);
                   _animalHospitalCount.text = d['animal_hospital_count']?.toString() ?? _animalHospitalCount.text;
 
-                  hasMarketsServices = (d['community_hall'] == true) || (d['fair_price_shop'] == true) || (d['grocery_market'] == true) || (d['vegetable_market'] == true) || (d['grain_grinding_mill'] == true) || (d['restaurant_hotel'] == true) || (d['public_transport_system'] == true) || (d['cooperative_society'] == true) || (d['public_garden_park'] == true) || (d['cinema_theatre'] == true) || (d['cold_storage'] == true) || (d['sports_ground'] == true) || (d['community_hall'] is num && d['community_hall'] > 0);
-                  _communityHallCount.text = d['community_hall']?.toString() ?? _communityHallCount.text;
-                  _fairPriceShopCount.text = d['fair_price_shop']?.toString() ?? _fairPriceShopCount.text;
-                  _groceryMarketCount.text = d['grocery_market']?.toString() ?? _groceryMarketCount.text;
-                  _vegetableMarketCount.text = d['vegetable_market']?.toString() ?? _vegetableMarketCount.text;
-                  _grindingMillCount.text = d['grain_grinding_mill']?.toString() ?? _grindingMillCount.text;
-                  _restaurantCount.text = d['restaurant_hotel']?.toString() ?? _restaurantCount.text;
-                  _publicTransportCount.text = d['public_transport_system']?.toString() ?? _publicTransportCount.text;
-                  _cooperativeCount.text = d['cooperative_society']?.toString() ?? _cooperativeCount.text;
-                  _publicGardenCount.text = d['public_garden_park']?.toString() ?? _publicGardenCount.text;
-                  _cinemaCount.text = d['cinema_theatre']?.toString() ?? _cinemaCount.text;
-                  _coldStorageCount.text = d['cold_storage']?.toString() ?? _coldStorageCount.text;
-                  _sportsGroundCount.text = d['sports_ground']?.toString() ?? _sportsGroundCount.text;
+                  hasCommunityHall = d['community_hall'] == true || (d['community_hall_count'] is num && d['community_hall_count'] > 0);
+                  _communityHallCount.text = d['community_hall_count']?.toString() ?? _communityHallCount.text;
+                  hasFairPriceShop = d['fair_price_shop'] == true || (d['fair_price_shop_count'] is num && d['fair_price_shop_count'] > 0);
+                  _fairPriceShopCount.text = d['fair_price_shop_count']?.toString() ?? _fairPriceShopCount.text;
+                  hasGroceryMarket = d['grocery_market'] == true || (d['grocery_market_count'] is num && d['grocery_market_count'] > 0);
+                  _groceryMarketCount.text = d['grocery_market_count']?.toString() ?? _groceryMarketCount.text;
+                  hasVegetableMarket = d['vegetable_market'] == true || (d['vegetable_market_count'] is num && d['vegetable_market_count'] > 0);
+                  _vegetableMarketCount.text = d['vegetable_market_count']?.toString() ?? _vegetableMarketCount.text;
+                  hasGrindingMill = d['grain_grinding_mill'] == true || (d['grain_grinding_mill_count'] is num && d['grain_grinding_mill_count'] > 0);
+                  _grindingMillCount.text = d['grain_grinding_mill_count']?.toString() ?? _grindingMillCount.text;
+                  hasRestaurant = d['restaurant_hotel'] == true || (d['restaurant_hotel_count'] is num && d['restaurant_hotel_count'] > 0);
+                  _restaurantCount.text = d['restaurant_hotel_count']?.toString() ?? _restaurantCount.text;
+                  hasPublicTransport = d['public_transport_system'] == true || (d['public_transport_system_count'] is num && d['public_transport_system_count'] > 0);
+                  _publicTransportCount.text = d['public_transport_system_count']?.toString() ?? _publicTransportCount.text;
+                  hasCooperative = d['cooperative_society'] == true || (d['cooperative_society_count'] is num && d['cooperative_society_count'] > 0);
+                  _cooperativeCount.text = d['cooperative_society_count']?.toString() ?? _cooperativeCount.text;
+                  hasPublicGarden = d['public_garden_park'] == true || (d['public_garden_park_count'] is num && d['public_garden_park_count'] > 0);
+                  _publicGardenCount.text = d['public_garden_park_count']?.toString() ?? _publicGardenCount.text;
+                  hasCinema = d['cinema_theatre'] == true || (d['cinema_theatre_count'] is num && d['cinema_theatre_count'] > 0);
+                  _cinemaCount.text = d['cinema_theatre_count']?.toString() ?? _cinemaCount.text;
+                  hasColdStorage = d['cold_storage'] == true || (d['cold_storage_count'] is num && d['cold_storage_count'] > 0);
+                  _coldStorageCount.text = d['cold_storage_count']?.toString() ?? _coldStorageCount.text;
+                  hasSportsGround = d['sports_ground'] == true || (d['sports_ground_count'] is num && d['sports_ground_count'] > 0);
+                  _sportsGroundCount.text = d['sports_ground_count']?.toString() ?? _sportsGroundCount.text;
 
-                  hasReligiousFacilities = (d['temple'] == true) || (d['mosque'] == true) || (d['other_religious_place'] == true) || (d['cremation'] == true) || (d['cemetery'] == true);
+                  hasTemple = d['temple'] == true || (d['temple_count'] is num && d['temple_count'] > 0);
                   _templeCount.text = d['temple_count']?.toString() ?? _templeCount.text;
+                  hasMosque = d['mosque'] == true || (d['mosque_count'] is num && d['mosque_count'] > 0);
                   _mosqueCount.text = d['mosque_count']?.toString() ?? _mosqueCount.text;
+                  hasOtherReligious = d['other_religious_place'] == true || (d['other_religious_place_count'] is num && d['other_religious_place_count'] > 0);
                   _otherReligiousCount.text = d['other_religious_place_count']?.toString() ?? _otherReligiousCount.text;
-                  _cremationGroundCount.text = (d['cremation'] == true) ? '1' : _cremationGroundCount.text;
-                  _cemeteryCount.text = (d['cemetery'] == true) ? '1' : _cemeteryCount.text;
+                  hasCremation = d['cremation'] == true || (d['cremation_count'] is num && d['cremation_count'] > 0);
+                  _cremationGroundCount.text = d['cremation_count']?.toString() ?? _cremationGroundCount.text;
+                  hasCemetery = d['cemetery'] == true || (d['cemetery_count'] is num && d['cemetery_count'] > 0);
+                  _cemeteryCount.text = d['cemetery_count']?.toString() ?? _cemeteryCount.text;
 
                   // attachments: lat/lon
                   if (d['lat'] != null && d['lon'] != null) {
@@ -471,7 +524,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
                 }
               }
             } catch (_) {}
-            _loadingRemote = false;
+            _isInitializing = false;
             if (mounted) setState(() {});
           } else {
             if (mounted) {
@@ -479,6 +532,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
               _talukaCtrl.text = v['taluka']?.toString() ?? '';
               _districtCtrl.text = v['district']?.toString() ?? '';
             }
+            _isInitializing = false;
+            if (mounted) setState(() {});
           }
         } else {
           if (!mounted) return;
@@ -495,9 +550,13 @@ class _VillageFormPageState extends State<VillageFormPage> {
           if (!mounted) return;
           // Return to app root (avoid importing HomeScreen to prevent circular imports)
           Navigator.of(context).popUntil((route) => route.isFirst);
+          _isInitializing = false;
+          if (mounted) setState(() {});
           return;
         }
       }
+    } catch (_) {
+      // Any error during initialization should stop the loading indicator.
     } catch (_) {}
 
     final id = await LocalDb().insertEntry({
@@ -509,7 +568,12 @@ class _VillageFormPageState extends State<VillageFormPage> {
       'createdAt': DateTime.now().millisecondsSinceEpoch,
       'remoteSurveyId': _remoteSurveyId,
     });
-    setState(() => _draftId = id);
+    if (mounted) {
+      setState(() {
+        _draftId = id;
+        if (_isInitializing) _isInitializing = false;
+      });
+    }
   }
 
   Map<String, dynamic> _collectPayload() => {
@@ -559,73 +623,73 @@ class _VillageFormPageState extends State<VillageFormPage> {
     'electricitySystemCount': int.tryParse(_electricitySystemCount.text),
     'hasWasteDisposal': hasWasteDisposal ?? false,
     'wasteDisposalCount': int.tryParse(_wasteDisposalCount.text),
-    'hasWaterStorage': (hasPublicWaterSources ?? false) && (int.tryParse(_waterStorageCount.text) ?? 0) > 0,
+    'hasWaterStorage': hasWaterStorage ?? false,
     'waterStorageCount': int.tryParse(_waterStorageCount.text),
-    'hasPublicWell': (hasPublicWaterSources ?? false) && (int.tryParse(_publicWellCount.text) ?? 0) > 0,
+    'hasPublicWell': hasPublicWell ?? false,
     'publicWellCount': int.tryParse(_publicWellCount.text),
-    'hasPublicPond': (hasPublicWaterSources ?? false) && (int.tryParse(_publicPondCount.text) ?? 0) > 0,
+    'hasPublicPond': hasPublicPond ?? false,
     'publicPondCount': int.tryParse(_publicPondCount.text),
-    'hasWaterForCattle': (hasPublicWaterSources ?? false) && (int.tryParse(_waterForCattleCount.text) ?? 0) > 0,
+    'hasWaterForCattle': hasWaterForCattle ?? false,
     'waterForCattleCount': int.tryParse(_waterForCattleCount.text),
-    'hasPrimarySchool': (hasEducationFacilities ?? false) && (int.tryParse(_primarySchoolCount.text) ?? 0) > 0,
+    'hasPrimarySchool': hasPrimarySchool ?? false,
     'primarySchoolCount': int.tryParse(_primarySchoolCount.text),
-    'hasSecondarySchool': (hasEducationFacilities ?? false) && (int.tryParse(_secondarySchoolCount.text) ?? 0) > 0,
+    'hasSecondarySchool': hasSecondarySchool ?? false,
     'secondarySchoolCount': int.tryParse(_secondarySchoolCount.text),
-    'hasHigherSecondary': (hasEducationFacilities ?? false) && (int.tryParse(_higherSecondaryCount.text) ?? 0) > 0,
+    'hasHigherSecondary': hasHigherSecondary ?? false,
     'higherSecondarySchoolCount': int.tryParse(_higherSecondaryCount.text),
-    'hasCollege': (hasEducationFacilities ?? false) && (int.tryParse(_collegeCount.text) ?? 0) > 0,
+    'hasCollege': hasCollege ?? false,
     'collegeCount': int.tryParse(_collegeCount.text),
-    'hasUniversity': (hasEducationFacilities ?? false) && (int.tryParse(_universityCount.text) ?? 0) > 0,
+    'hasUniversity': hasUniversity ?? false,
     'universityCount': int.tryParse(_universityCount.text),
-    'hasAnganwadi': (hasEducationFacilities ?? false) && (int.tryParse(_anganwadiCount.text) ?? 0) > 0,
+    'hasAnganwadi': hasAnganwadi ?? false,
     'anganwadiCount': int.tryParse(_anganwadiCount.text),
-    'hasItc': (hasEducationFacilities ?? false) && (int.tryParse(_itcCount.text) ?? 0) > 0,
+    'hasItc': hasItc ?? false,
     'itcCount': int.tryParse(_itcCount.text),
-    'hasDispensary': (hasHealthFacilities ?? false) && (int.tryParse(_dispensaryCount.text) ?? 0) > 0,
+    'hasDispensary': hasDispensary ?? false,
     'dispensaryCount': int.tryParse(_dispensaryCount.text),
-    'hasPhc': (hasHealthFacilities ?? false) && (int.tryParse(_phcCount.text) ?? 0) > 0,
+    'hasPhc': hasPhc ?? false,
     'phcCount': int.tryParse(_phcCount.text),
-    'hasGovHospital': (hasHealthFacilities ?? false) && (int.tryParse(_govHospitalCount.text) ?? 0) > 0,
+    'hasGovHospital': hasGovHospital ?? false,
     'govHospitalCount': int.tryParse(_govHospitalCount.text),
-    'hasPrivateHospital': (hasHealthFacilities ?? false) && (int.tryParse(_privateHospitalCount.text) ?? 0) > 0,
+    'hasPrivateHospital': hasPrivateHospital ?? false,
     'privateHospitalCount': int.tryParse(_privateHospitalCount.text),
-    'hasDrugStore': (hasHealthFacilities ?? false) && (int.tryParse(_drugStoreCount.text) ?? 0) > 0,
+    'hasDrugStore': hasDrugStore ?? false,
     'drugStoreCount': int.tryParse(_drugStoreCount.text),
-    'hasAnimalHospital': (hasHealthFacilities ?? false) && (int.tryParse(_animalHospitalCount.text) ?? 0) > 0,
+    'hasAnimalHospital': hasAnimalHospital ?? false,
     'animalHospitalCount': int.tryParse(_animalHospitalCount.text),
-    'hasCommunityHall': (hasMarketsServices ?? false) && (int.tryParse(_communityHallCount.text) ?? 0) > 0,
+    'hasCommunityHall': hasCommunityHall ?? false,
     'communityHallCount': int.tryParse(_communityHallCount.text),
-    'hasFairPriceShop': (hasMarketsServices ?? false) && (int.tryParse(_fairPriceShopCount.text) ?? 0) > 0,
+    'hasFairPriceShop': hasFairPriceShop ?? false,
     'fairPriceShopCount': int.tryParse(_fairPriceShopCount.text),
-    'hasGroceryMarket': (hasMarketsServices ?? false) && (int.tryParse(_groceryMarketCount.text) ?? 0) > 0,
+    'hasGroceryMarket': hasGroceryMarket ?? false,
     'groceryMarketCount': int.tryParse(_groceryMarketCount.text),
-    'hasVegetableMarket': (hasMarketsServices ?? false) && (int.tryParse(_vegetableMarketCount.text) ?? 0) > 0,
+    'hasVegetableMarket': hasVegetableMarket ?? false,
     'vegetableMarketCount': int.tryParse(_vegetableMarketCount.text),
-    'hasGrindingMill': (hasMarketsServices ?? false) && (int.tryParse(_grindingMillCount.text) ?? 0) > 0,
+    'hasGrindingMill': hasGrindingMill ?? false,
     'grindingMillCount': int.tryParse(_grindingMillCount.text),
-    'hasRestaurant': (hasMarketsServices ?? false) && (int.tryParse(_restaurantCount.text) ?? 0) > 0,
+    'hasRestaurant': hasRestaurant ?? false,
     'restaurantCount': int.tryParse(_restaurantCount.text),
-    'hasPublicTransport': (hasMarketsServices ?? false) && (int.tryParse(_publicTransportCount.text) ?? 0) > 0,
+    'hasPublicTransport': hasPublicTransport ?? false,
     'publicTransportCount': int.tryParse(_publicTransportCount.text),
-    'hasCooperative': (hasMarketsServices ?? false) && (int.tryParse(_cooperativeCount.text) ?? 0) > 0,
+    'hasCooperative': hasCooperative ?? false,
     'cooperativeCount': int.tryParse(_cooperativeCount.text),
-    'hasPublicGarden': (hasMarketsServices ?? false) && (int.tryParse(_publicGardenCount.text) ?? 0) > 0,
+    'hasPublicGarden': hasPublicGarden ?? false,
     'publicGardenCount': int.tryParse(_publicGardenCount.text),
-    'hasCinema': (hasMarketsServices ?? false) && (int.tryParse(_cinemaCount.text) ?? 0) > 0,
+    'hasCinema': hasCinema ?? false,
     'cinemaCount': int.tryParse(_cinemaCount.text),
-    'hasColdStorage': (hasMarketsServices ?? false) && (int.tryParse(_coldStorageCount.text) ?? 0) > 0,
+    'hasColdStorage': hasColdStorage ?? false,
     'coldStorageCount': int.tryParse(_coldStorageCount.text),
-    'hasSportsGround': (hasMarketsServices ?? false) && (int.tryParse(_sportsGroundCount.text) ?? 0) > 0,
+    'hasSportsGround': hasSportsGround ?? false,
     'sportsGroundCount': int.tryParse(_sportsGroundCount.text),
-    'hasTemple': (hasReligiousFacilities ?? false) && (int.tryParse(_templeCount.text) ?? 0) > 0,
+    'hasTemple': hasTemple ?? false,
     'templeCount': int.tryParse(_templeCount.text),
-    'hasMosque': (hasReligiousFacilities ?? false) && (int.tryParse(_mosqueCount.text) ?? 0) > 0,
+    'hasMosque': hasMosque ?? false,
     'mosqueCount': int.tryParse(_mosqueCount.text),
-    'hasOtherReligious': (hasReligiousFacilities ?? false) && (int.tryParse(_otherReligiousCount.text) ?? 0) > 0,
+    'hasOtherReligious': hasOtherReligious ?? false,
     'otherReligiousCount': int.tryParse(_otherReligiousCount.text),
-    'hasCremation': (hasReligiousFacilities ?? false) && (int.tryParse(_cremationGroundCount.text) ?? 0) > 0,
+    'hasCremation': hasCremation ?? false,
     'cremationCount': int.tryParse(_cremationGroundCount.text),
-    'hasCemetery': (hasReligiousFacilities ?? false) && (int.tryParse(_cemeteryCount.text) ?? 0) > 0,
+    'hasCemetery': hasCemetery ?? false,
     'cemeteryCount': int.tryParse(_cemeteryCount.text),
     'photo': _villagePhotoPath,
     'gps': _gpsLocation,
@@ -646,7 +710,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
   Future<void> _submit() async {
     // Validate mandatory radio buttons
-    if (hasAsphaltRoad == null || hasRawRoad == null || hasWaterSystem == null || hasDrainage == null || hasElectricity == null || hasWasteDisposal == null || hasPublicWaterSources == null || hasEducationFacilities == null || hasHealthFacilities == null || hasMarketsServices == null || hasReligiousFacilities == null) {
+    if (hasAsphaltRoad == null || hasRawRoad == null || hasWaterSystem == null || hasDrainage == null || hasElectricity == null || hasWasteDisposal == null || hasWaterStorage == null || hasPublicWell == null || hasPublicPond == null || hasWaterForCattle == null || hasPrimarySchool == null || hasSecondarySchool == null || hasHigherSecondary == null || hasCollege == null || hasUniversity == null || hasAnganwadi == null || hasItc == null || hasDispensary == null || hasPhc == null || hasGovHospital == null || hasPrivateHospital == null || hasDrugStore == null || hasAnimalHospital == null || hasCommunityHall == null || hasFairPriceShop == null || hasGroceryMarket == null || hasVegetableMarket == null || hasGrindingMill == null || hasRestaurant == null || hasPublicTransport == null || hasCooperative == null || hasPublicGarden == null || hasCinema == null || hasColdStorage == null || hasSportsGround == null || hasTemple == null || hasMosque == null || hasOtherReligious == null || hasCremation == null || hasCemetery == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please answer all mandatory (Yes/No) questions in the Infrastructure section.'),
@@ -731,15 +795,15 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loadingRemote) {
+    if (_isInitializing) {
       return Scaffold(
         appBar: AppBar(title: const Text('Village Survey')),
         body: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
+              CircularProgressIndicator.adaptive(),
+              SizedBox(height: 20),
               Text('Loading village details...'),
             ],
           ),
@@ -868,87 +932,191 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
           const SizedBox(height: 12),
           // 5.2 Public Water Sources
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Public water sources available *', hasPublicWaterSources, (val) => setState(() => hasPublicWaterSources = val)),
-          Visibility(
-            visible: hasPublicWaterSources == true,
-            child: Column(children: [
-              TextFormField(controller: _waterStorageCount, decoration: const InputDecoration(labelText: 'Water Storage Arrangement (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _publicWellCount, decoration: const InputDecoration(labelText: 'Public Well (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _publicPondCount, decoration: const InputDecoration(labelText: 'Public Pond (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _waterForCattleCount, decoration: const InputDecoration(labelText: 'Water for Cattle (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-            ]),
-          ),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
+          _buildRadioGroup('Water Storage Arrangement *', hasWaterStorage, (val) => setState(() => hasWaterStorage = val)),
+          if (hasWaterStorage == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _waterStorageCount, decoration: const InputDecoration(labelText: 'Water Storage Arrangement (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Public Well *', hasPublicWell, (val) => setState(() => hasPublicWell = val)),
+          if (hasPublicWell == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _publicWellCount, decoration: const InputDecoration(labelText: 'Public Well (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Public Pond *', hasPublicPond, (val) => setState(() => hasPublicPond = val)),
+          if (hasPublicPond == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _publicPondCount, decoration: const InputDecoration(labelText: 'Public Pond (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Water for Cattle *', hasWaterForCattle, (val) => setState(() => hasWaterForCattle = val)),
+          if (hasWaterForCattle == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _waterForCattleCount, decoration: const InputDecoration(labelText: 'Water for Cattle (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
 
           const SizedBox(height: 12),
           // 5.3 Education Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Education facilities available *', hasEducationFacilities, (val) => setState(() => hasEducationFacilities = val)),
-          Visibility(
-            visible: hasEducationFacilities == true,
-            child: Column(children: [
-              TextFormField(controller: _primarySchoolCount, decoration: const InputDecoration(labelText: 'Primary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _secondarySchoolCount, decoration: const InputDecoration(labelText: 'Secondary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _higherSecondaryCount, decoration: const InputDecoration(labelText: 'Higher Secondary School (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _collegeCount, decoration: const InputDecoration(labelText: 'College (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _universityCount, decoration: const InputDecoration(labelText: 'University (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _anganwadiCount, decoration: const InputDecoration(labelText: 'Anganwadi (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _itcCount, decoration: const InputDecoration(labelText: 'Industrial Training Centre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-            ]),
-          ),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
+          _buildRadioGroup('Primary school *', hasPrimarySchool, (val) => setState(() => hasPrimarySchool = val)),
+          if (hasPrimarySchool == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _primarySchoolCount, decoration: const InputDecoration(labelText: 'Primary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Secondary school *', hasSecondarySchool, (val) => setState(() => hasSecondarySchool = val)),
+          if (hasSecondarySchool == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _secondarySchoolCount, decoration: const InputDecoration(labelText: 'Secondary school (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Higher Secondary School *', hasHigherSecondary, (val) => setState(() => hasHigherSecondary = val)),
+          if (hasHigherSecondary == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _higherSecondaryCount, decoration: const InputDecoration(labelText: 'Higher Secondary School (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('College *', hasCollege, (val) => setState(() => hasCollege = val)),
+          if (hasCollege == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _collegeCount, decoration: const InputDecoration(labelText: 'College (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('University *', hasUniversity, (val) => setState(() => hasUniversity = val)),
+          if (hasUniversity == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _universityCount, decoration: const InputDecoration(labelText: 'University (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Anganwadi *', hasAnganwadi, (val) => setState(() => hasAnganwadi = val)),
+          if (hasAnganwadi == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _anganwadiCount, decoration: const InputDecoration(labelText: 'Anganwadi (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Industrial Training Centre *', hasItc, (val) => setState(() => hasItc = val)),
+          if (hasItc == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _itcCount, decoration: const InputDecoration(labelText: 'Industrial Training Centre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
 
           const SizedBox(height: 12),
           // 5.4 Health Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Health facilities available *', hasHealthFacilities, (val) => setState(() => hasHealthFacilities = val)),
-          Visibility(
-            visible: hasHealthFacilities == true,
-            child: Column(children: [
-              TextFormField(controller: _dispensaryCount, decoration: const InputDecoration(labelText: 'Dispensary (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _phcCount, decoration: const InputDecoration(labelText: 'Primary Health Centre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _govHospitalCount, decoration: const InputDecoration(labelText: 'Government Hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _privateHospitalCount, decoration: const InputDecoration(labelText: 'Private hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _drugStoreCount, decoration: const InputDecoration(labelText: 'Drug store (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _animalHospitalCount, decoration: const InputDecoration(labelText: 'Animal Hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-            ]),
-          ),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
+          _buildRadioGroup('Dispensary *', hasDispensary, (val) => setState(() => hasDispensary = val)),
+          if (hasDispensary == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _dispensaryCount, decoration: const InputDecoration(labelText: 'Dispensary (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Primary Health Centre *', hasPhc, (val) => setState(() => hasPhc = val)),
+          if (hasPhc == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _phcCount, decoration: const InputDecoration(labelText: 'Primary Health Centre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Government Hospital *', hasGovHospital, (val) => setState(() => hasGovHospital = val)),
+          if (hasGovHospital == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _govHospitalCount, decoration: const InputDecoration(labelText: 'Government Hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Private hospital *', hasPrivateHospital, (val) => setState(() => hasPrivateHospital = val)),
+          if (hasPrivateHospital == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _privateHospitalCount, decoration: const InputDecoration(labelText: 'Private hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Drug store *', hasDrugStore, (val) => setState(() => hasDrugStore = val)),
+          if (hasDrugStore == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _drugStoreCount, decoration: const InputDecoration(labelText: 'Drug store (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Animal Hospital *', hasAnimalHospital, (val) => setState(() => hasAnimalHospital = val)),
+          if (hasAnimalHospital == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _animalHospitalCount, decoration: const InputDecoration(labelText: 'Animal Hospital (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
 
           const SizedBox(height: 12),
           // 5.5 Markets, Community & Services
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count/detail if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Markets / community services available *', hasMarketsServices, (val) => setState(() => hasMarketsServices = val)),
-          Visibility(
-            visible: hasMarketsServices == true,
-            child: Column(children: [
-              TextFormField(controller: _communityHallCount, decoration: const InputDecoration(labelText: 'Community Hall (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _fairPriceShopCount, decoration: const InputDecoration(labelText: 'Fair price shop (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _groceryMarketCount, decoration: const InputDecoration(labelText: 'Grocery market (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _vegetableMarketCount, decoration: const InputDecoration(labelText: 'Vegetable market (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _grindingMillCount, decoration: const InputDecoration(labelText: 'Grain grinding mill (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _restaurantCount, decoration: const InputDecoration(labelText: 'Restaurant/Hotel (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _publicTransportCount, decoration: const InputDecoration(labelText: 'Public Transport System (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _cooperativeCount, decoration: const InputDecoration(labelText: 'Cooperative Organization (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _publicGardenCount, decoration: const InputDecoration(labelText: 'Public Garden/Park (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _cinemaCount, decoration: const InputDecoration(labelText: 'Cinema/Theatre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _coldStorageCount, decoration: const InputDecoration(labelText: 'Cold Storage (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _sportsGroundCount, decoration: const InputDecoration(labelText: 'Sports Ground (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
-            ]),
-          ),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
+          _buildRadioGroup('Community Hall *', hasCommunityHall, (val) => setState(() => hasCommunityHall = val)),
+          if (hasCommunityHall == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _communityHallCount, decoration: const InputDecoration(labelText: 'Community Hall (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Fair price shop *', hasFairPriceShop, (val) => setState(() => hasFairPriceShop = val)),
+          if (hasFairPriceShop == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _fairPriceShopCount, decoration: const InputDecoration(labelText: 'Fair price shop (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Grocery market *', hasGroceryMarket, (val) => setState(() => hasGroceryMarket = val)),
+          if (hasGroceryMarket == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _groceryMarketCount, decoration: const InputDecoration(labelText: 'Grocery market (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Vegetable market *', hasVegetableMarket, (val) => setState(() => hasVegetableMarket = val)),
+          if (hasVegetableMarket == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _vegetableMarketCount, decoration: const InputDecoration(labelText: 'Vegetable market (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Grain grinding mill *', hasGrindingMill, (val) => setState(() => hasGrindingMill = val)),
+          if (hasGrindingMill == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _grindingMillCount, decoration: const InputDecoration(labelText: 'Grain grinding mill (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Restaurant/Hotel *', hasRestaurant, (val) => setState(() => hasRestaurant = val)),
+          if (hasRestaurant == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _restaurantCount, decoration: const InputDecoration(labelText: 'Restaurant/Hotel (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Public Transport System *', hasPublicTransport, (val) => setState(() => hasPublicTransport = val)),
+          if (hasPublicTransport == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicTransportCount, decoration: const InputDecoration(labelText: 'Public Transport System (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Cooperative Organization *', hasCooperative, (val) => setState(() => hasCooperative = val)),
+          if (hasCooperative == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cooperativeCount, decoration: const InputDecoration(labelText: 'Cooperative Organization (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Public Garden/Park *', hasPublicGarden, (val) => setState(() => hasPublicGarden = val)),
+          if (hasPublicGarden == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicGardenCount, decoration: const InputDecoration(labelText: 'Public Garden/Park (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Cinema/Theatre *', hasCinema, (val) => setState(() => hasCinema = val)),
+          if (hasCinema == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cinemaCount, decoration: const InputDecoration(labelText: 'Cinema/Theatre (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Cold Storage *', hasColdStorage, (val) => setState(() => hasColdStorage = val)),
+          if (hasColdStorage == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _coldStorageCount, decoration: const InputDecoration(labelText: 'Cold Storage (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
+          _buildRadioGroup('Sports Ground *', hasSportsGround, (val) => setState(() => hasSportsGround = val)),
+          if (hasSportsGround == true)
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _sportsGroundCount, decoration: const InputDecoration(labelText: 'Sports Ground (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number)),
 
           const SizedBox(height: 12),
           // 5.6 Religious/Mortality Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count/detail if Yes)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          _buildRadioGroup('Religious / mortality facilities available *', hasReligiousFacilities, (val) => setState(() => hasReligiousFacilities = val)),
-          Visibility(
-            visible: hasReligiousFacilities == true,
-            child: Column(children: [
-              TextFormField(controller: _templeCount, decoration: const InputDecoration(labelText: 'Religious Places: Temple (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _mosqueCount, decoration: const InputDecoration(labelText: 'Religious Places: Mosque (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _otherReligiousCount, decoration: const InputDecoration(labelText: 'Religious Places: Other (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _cremationGroundCount, decoration: const InputDecoration(labelText: 'Cremation Ground (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-              TextFormField(controller: _cemeteryCount, decoration: const InputDecoration(labelText: 'Cemetery (count/detail)', hintText: 'Enter count or detail if available'), keyboardType: TextInputType.number),
-            ]),
-          ),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold)))),
+          _buildRadioGroup('Temple *', hasTemple, (val) => setState(() => hasTemple = val)),
+          if (hasTemple == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _templeCount, decoration: const InputDecoration(labelText: 'Temple (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Mosque *', hasMosque, (val) => setState(() => hasMosque = val)),
+          if (hasMosque == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _mosqueCount, decoration: const InputDecoration(labelText: 'Mosque (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Other Religious Place *', hasOtherReligious, (val) => setState(() => hasOtherReligious = val)),
+          if (hasOtherReligious == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _otherReligiousCount, decoration: const InputDecoration(labelText: 'Other Religious Place (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Cremation Ground *', hasCremation, (val) => setState(() => hasCremation = val)),
+          if (hasCremation == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _cremationGroundCount, decoration: const InputDecoration(labelText: 'Cremation Ground (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
+          _buildRadioGroup('Cemetery *', hasCemetery, (val) => setState(() => hasCemetery = val)),
+          if (hasCemetery == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextFormField(controller: _cemeteryCount, decoration: const InputDecoration(labelText: 'Cemetery (count)', hintText: 'Enter count if available'), keyboardType: TextInputType.number),
+            ),
         ]),
         isActive: _currentStep == 4,
       ),
