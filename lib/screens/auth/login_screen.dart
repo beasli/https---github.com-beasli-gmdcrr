@@ -4,6 +4,7 @@ import '../../core/config/env.dart';
 import '../../core/services/auth_service.dart';
 import '../village/village_form.dart';
 import '../village/local_entries.dart';
+import '../family/family_survey_form.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -133,6 +134,13 @@ class HomeScreen extends StatelessWidget {
               child: const Text("Village Survey"),
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VillageFormPage()));
+              },
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              child: const Text("Family Survey"),
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilySurveyFormPage()));
               },
             ),
             const SizedBox(height: 12),
