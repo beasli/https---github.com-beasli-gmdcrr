@@ -33,6 +33,38 @@ class TreeRecord {
   String? photoPath;
 }
 
+/// Data model for a single land record.
+class LandRecord {
+  final UniqueKey key = UniqueKey();
+  TextEditingController khataNoCtrl = TextEditingController();
+  String? landType;
+  TextEditingController totalAreaCtrl = TextEditingController();
+  TextEditingController acquiredAreaCtrl = TextEditingController();
+  TextEditingController remainingAreaCtrl = TextEditingController();
+  String? hasDocumentaryEvidence;
+  String? isLandMortgaged;
+  TextEditingController landMortgagedToCtrl = TextEditingController();
+  TextEditingController landMortgagedDetailsCtrl = TextEditingController();
+}
+
+/// Data model for a single asset record.
+class AssetRecord {
+  final UniqueKey key = UniqueKey();
+  TextEditingController nameCtrl = TextEditingController();
+  TextEditingController countCtrl = TextEditingController();
+  String? photoPath;
+}
+
+/// Data model for a single livestock record.
+class LivestockRecord {
+  final UniqueKey key = UniqueKey();
+  TextEditingController nameCtrl = TextEditingController();
+  TextEditingController countCtrl = TextEditingController();
+  String? cattlePaddyType;
+  String? photoPath;
+}
+
+
 class FamilySurveyFormPage extends StatefulWidget {
   const FamilySurveyFormPage({super.key});
 
@@ -87,6 +119,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
 
   // Step 3: Land & Tree Assets Controllers
   String? _landHolds;
+  final List<LandRecord> _landRecords = [];
   final List<TreeRecord> _treeRecords = [];
   
   // Step 4: Income & Other Assets Controllers
@@ -100,28 +133,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   final _estimatedAnnualIncomeCtrl = TextEditingController(); // read-only
 
   // Other Assets
-  String? _assetTractor;
-  String? _assetTwoWheeler;
-  String? _assetMotorcar;
-  String? _assetTempoTruck;
-  String? _assetTv;
-  String? _assetFridge;
-  String? _assetAc;
-  String? _assetFlourMill;
-  final _assetOtherDetailsCtrl = TextEditingController();
-  String? _assetsPhotoPath;
-
+  final List<AssetRecord> _assetRecords = [];
   // Livestock
-  final _livestockCowCtrl = TextEditingController();
-  final _livestockOxCtrl = TextEditingController();
-  final _livestockBuffaloCtrl = TextEditingController();
-  final _livestockSheepCtrl = TextEditingController();
-  final _livestockGoatCtrl = TextEditingController();
-  final _livestockPoultryCtrl = TextEditingController();
-  final _livestockCamelCtrl = TextEditingController();
-  String? _livestockCattlePaddyType;
-  final _livestockOtherDetailsCtrl = TextEditingController();
-  String? _livestockPhotoPath;
+  final List<LivestockRecord> _livestockRecords = [];
 
   // Step 5: Finance & Documents Controllers
   // Annual Expenses
@@ -198,32 +212,32 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     _residenceConstructionAreaCtrl.dispose();
 
     // Dispose Step 3 controllers
+    for (var land in _landRecords) {
+      _disposeLandRecordControllers(land);
+    }
     for (var tree in _treeRecords) {
       _disposeTreeRecordControllers(tree);
     }
     // Dispose Step 4 controllers
-    _incomeFarmingCtrl.removeListener(_calculateTotalIncome);
-    _incomeJobCtrl.removeListener(_calculateTotalIncome);
-    _incomeBusinessCtrl.removeListener(_calculateTotalIncome);
-    _incomeLaborCtrl.removeListener(_calculateTotalIncome);
-    _incomeHouseworkCtrl.removeListener(_calculateTotalIncome);
-    _incomeOtherCtrl.removeListener(_calculateTotalIncome);
     _incomeFarmingCtrl.dispose();
     _incomeJobCtrl.dispose();
     _incomeBusinessCtrl.dispose();
     _incomeLaborCtrl.dispose();
     _incomeHouseworkCtrl.dispose();
     _incomeOtherCtrl.dispose();
+    _incomeFarmingCtrl.removeListener(_calculateTotalIncome);
+    _incomeJobCtrl.removeListener(_calculateTotalIncome);
+    _incomeBusinessCtrl.removeListener(_calculateTotalIncome);
+    _incomeLaborCtrl.removeListener(_calculateTotalIncome);
+    _incomeHouseworkCtrl.removeListener(_calculateTotalIncome);
+    _incomeOtherCtrl.removeListener(_calculateTotalIncome);
     _estimatedAnnualIncomeCtrl.dispose();
-    _assetOtherDetailsCtrl.dispose();
-    _livestockCowCtrl.dispose();
-    _livestockOxCtrl.dispose();
-    _livestockBuffaloCtrl.dispose();
-    _livestockSheepCtrl.dispose();
-    _livestockGoatCtrl.dispose();
-    _livestockPoultryCtrl.dispose();
-    _livestockCamelCtrl.dispose();
-    _livestockOtherDetailsCtrl.dispose();
+    for (var asset in _assetRecords) {
+      _disposeAssetRecordControllers(asset);
+    }
+    for (var livestock in _livestockRecords) {
+      _disposeLivestockRecordControllers(livestock);
+    }
     // Dispose Step 5 controllers
     _expenseAgricultureCtrl.dispose();
     _expenseHouseCtrl.dispose();
@@ -271,6 +285,55 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     });
   }
 
+  void _disposeLandRecordControllers(LandRecord land) {
+    land.khataNoCtrl.dispose();
+    land.totalAreaCtrl.dispose();
+    land.acquiredAreaCtrl.dispose();
+    land.remainingAreaCtrl.dispose();
+    land.landMortgagedToCtrl.dispose();
+    land.landMortgagedDetailsCtrl.dispose();
+  }
+
+  void _addLandRecord() {
+    setState(() {
+      _landRecords.add(LandRecord());
+    });
+  }
+
+  void _removeLandRecord(int index) {
+    setState(() {
+      _disposeLandRecordControllers(_landRecords[index]);
+      _landRecords.removeAt(index);
+    });
+  }
+
+  void _disposeAssetRecordControllers(AssetRecord asset) {
+    asset.nameCtrl.dispose();
+    asset.countCtrl.dispose();
+  }
+
+  void _addAssetRecord() {
+    setState(() {
+      _assetRecords.add(AssetRecord());
+    });
+  }
+
+  void _removeAssetRecord(int index) {
+    setState(() {
+      _disposeAssetRecordControllers(_assetRecords[index]);
+      _assetRecords.removeAt(index);
+    });
+  }
+
+  void _disposeLivestockRecordControllers(LivestockRecord livestock) {
+    livestock.nameCtrl.dispose();
+    livestock.countCtrl.dispose();
+  }
+
+  void _addLivestockRecord() {
+    setState(() => _livestockRecords.add(LivestockRecord()));
+  }
+
   void _disposeTreeRecordControllers(TreeRecord tree) {
     tree.nameCtrl.dispose();
     tree.countCtrl.dispose();
@@ -287,6 +350,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() {
       _disposeTreeRecordControllers(_treeRecords[index]);
       _treeRecords.removeAt(index);
+    });
+  }
+
+  void _removeLivestockRecord(int index) {
+    setState(() {
+      _disposeLivestockRecordControllers(_livestockRecords[index]);
+      _livestockRecords.removeAt(index);
     });
   }
 
@@ -501,6 +571,89 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     );
   }
 
+  Widget _buildLandRecordForm(LandRecord land, int index) {
+    return Column(
+      key: land.key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Land Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium),
+            TextButton.icon(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              label: const Text('Remove', style: TextStyle(color: Colors.red)),
+              onPressed: () => _removeLandRecord(index),
+            ),
+          ],
+        ),
+        TextFormField(controller: land.khataNoCtrl, decoration: const InputDecoration(labelText: 'Khata No.'), validator: _validateRequired),
+        _buildDropdown('Land Type', land.landType, ['Agricultural', 'Commercial', 'Residential'], (val) => setState(() => land.landType = val)),
+        TextFormField(controller: land.totalAreaCtrl, decoration: const InputDecoration(labelText: 'Total Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        TextFormField(controller: land.acquiredAreaCtrl, decoration: const InputDecoration(labelText: 'Acquired Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        TextFormField(controller: land.remainingAreaCtrl, decoration: const InputDecoration(labelText: 'Remaining Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        _buildDropdown('Has Documentary Evidence?', land.hasDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() => land.hasDocumentaryEvidence = val)),
+        _buildDropdown('Is Land Mortgaged?', land.isLandMortgaged, ['Yes', 'No'], (val) => setState(() => land.isLandMortgaged = val)),
+        if (land.isLandMortgaged == 'Yes') ...[
+          TextFormField(controller: land.landMortgagedToCtrl, decoration: const InputDecoration(labelText: 'Land Mortgaged To'), validator: _validateRequired),
+          TextFormField(controller: land.landMortgagedDetailsCtrl, decoration: const InputDecoration(labelText: 'Mortgage Details'), validator: _validateRequired),
+        ],
+        const Divider(height: 32, thickness: 1),
+      ],
+    );
+  }
+
+  Widget _buildAssetRecordForm(AssetRecord asset, int index) {
+    return Column(
+      key: asset.key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Asset Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium),
+            TextButton.icon(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              label: const Text('Remove', style: TextStyle(color: Colors.red)),
+              onPressed: () => _removeAssetRecord(index),
+            ),
+          ],
+        ),
+        TextFormField(controller: asset.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Asset (e.g., Tractor, TV)'), validator: _validateRequired),
+        TextFormField(controller: asset.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.camera_alt),
+          title: Text(asset.photoPath ?? 'Capture Asset Photo'),
+          onTap: () { /* TODO: Implement photo capture */ },
+          trailing: asset.photoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
+        ),
+        const Divider(height: 32, thickness: 1),
+      ],
+    );
+  }
+
+  Widget _buildLivestockRecordForm(LivestockRecord livestock, int index) {
+    return Column(
+      key: livestock.key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Livestock Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium),
+            TextButton.icon(icon: const Icon(Icons.delete_outline, color: Colors.red), label: const Text('Remove', style: TextStyle(color: Colors.red)), onPressed: () => _removeLivestockRecord(index)),
+          ],
+        ),
+        TextFormField(controller: livestock.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Livestock (e.g., Cow, Goat)'), validator: _validateRequired),
+        TextFormField(controller: livestock.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
+        _buildDropdown('Cattle Paddy Type', livestock.cattlePaddyType, ['Raw', 'Ripe', 'N/A'], (val) => setState(() => livestock.cattlePaddyType = val)),
+        ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.camera_alt), title: Text(livestock.photoPath ?? 'Capture Livestock Photo'), onTap: () { /* TODO: Implement photo capture */ }, trailing: livestock.photoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null),
+        const Divider(height: 32, thickness: 1),
+      ],
+    );
+  }
+
   // Helper for review screen section titles
   Widget _buildReviewSectionTitle(String title) {
     return Padding(
@@ -600,6 +753,12 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Land Ownership Details', style: Theme.of(context).textTheme.titleLarge),
             _buildDropdown('Does the family hold any land?', _landHolds, ['Yes', 'No'], (val) => setState(() => _landHolds = val)),
+            if (_landHolds == 'Yes') ...[
+              const SizedBox(height: 16),
+              if (_landRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No land records added.'))),
+              ..._landRecords.asMap().entries.map((entry) => _buildLandRecordForm(entry.value, entry.key)),
+              Center(child: ElevatedButton.icon(onPressed: _addLandRecord, icon: const Icon(Icons.add), label: const Text('Add a land record'))),
+            ],
             const Divider(height: 32),
             Text('Tree Details', style: Theme.of(context).textTheme.titleLarge),
             if (_treeRecords.isEmpty)
@@ -627,35 +786,16 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             const Divider(height: 32),
 
             Text('Other Assets', style: Theme.of(context).textTheme.titleLarge),
-            _buildDropdown('Tractor', _assetTractor, ['Yes', 'No'], (val) => setState(() => _assetTractor = val)),
-            _buildDropdown('Scooter/Motor Cycle/Auto Rickshaw', _assetTwoWheeler, ['Yes', 'No'], (val) => setState(() => _assetTwoWheeler = val)),
-            _buildDropdown('Motorcar', _assetMotorcar, ['Yes', 'No'], (val) => setState(() => _assetMotorcar = val)),
-            _buildDropdown('Tempo/Truck', _assetTempoTruck, ['Yes', 'No'], (val) => setState(() => _assetTempoTruck = val)),
-            _buildDropdown('TV', _assetTv, ['Yes', 'No'], (val) => setState(() => _assetTv = val)),
-            _buildDropdown('Fridge', _assetFridge, ['Yes', 'No'], (val) => setState(() => _assetFridge = val)),
-            _buildDropdown('AC', _assetAc, ['Yes', 'No'], (val) => setState(() => _assetAc = val)),
-            _buildDropdown('Flour Mill', _assetFlourMill, ['Yes', 'No'], (val) => setState(() => _assetFlourMill = val)),
-            TextFormField(controller: _assetOtherDetailsCtrl, decoration: const InputDecoration(labelText: 'Other Assets Details')),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.camera_alt),
-              title: Text(_assetsPhotoPath ?? 'Capture Other Assets Photo'),
-              onTap: () { /* TODO: Implement photo capture */ },
-              trailing: _assetsPhotoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
-            ),
+            if (_assetRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No asset records added.'))),
+            ..._assetRecords.asMap().entries.map((entry) => _buildAssetRecordForm(entry.value, entry.key)),
+            Center(child: ElevatedButton.icon(onPressed: _addAssetRecord, icon: const Icon(Icons.add), label: const Text('Add an asset record'))),
             const Divider(height: 32),
 
             Text('Livestock Details', style: Theme.of(context).textTheme.titleLarge),
-            TextFormField(controller: _livestockCowCtrl, decoration: const InputDecoration(labelText: 'COW Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _livestockOxCtrl, decoration: const InputDecoration(labelText: 'OX Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _livestockBuffaloCtrl, decoration: const InputDecoration(labelText: 'Buffalo Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _livestockSheepCtrl, decoration: const InputDecoration(labelText: 'Sheep Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _livestockGoatCtrl, decoration: const InputDecoration(labelText: 'Goat Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _livestockPoultryCtrl, decoration: const InputDecoration(labelText: 'Poultry Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _livestockCamelCtrl, decoration: const InputDecoration(labelText: 'Camel Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-            _buildDropdown('Cattle Paddy Type', _livestockCattlePaddyType, ['Raw', 'Ripe'], (val) => setState(() => _livestockCattlePaddyType = val)),
-            TextFormField(controller: _livestockOtherDetailsCtrl, decoration: const InputDecoration(labelText: 'Other Livestock Details')),
-            ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.camera_alt), title: Text(_livestockPhotoPath ?? 'Capture Livestock Photo'), onTap: () { /* TODO: Implement photo capture */ }, trailing: _livestockPhotoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null),
+            if (_livestockRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No livestock records added.'))),
+            ..._livestockRecords.asMap().entries.map((entry) => _buildLivestockRecordForm(entry.value, entry.key)),
+            Center(child: ElevatedButton.icon(onPressed: _addLivestockRecord, icon: const Icon(Icons.add), label: const Text('Add a livestock record'))),
+
           ]),
         ),
         isActive: _currentStep >= 3,
@@ -755,17 +895,21 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             // Step 3 Review
             _buildReviewSectionTitle('3. Land & Tree Assets'),
             _buildReviewRow('Holds Land?', _landHolds),
+            if (_landHolds == 'Yes')
+              _buildReviewRow('Land Records', _landRecords.isNotEmpty ? '${_landRecords.length} record(s)' : 'None'),
             _buildReviewRow('Tree Records', _treeRecords.isNotEmpty ? '${_treeRecords.length} record(s)' : 'None'),
 
             // Step 4 Review
             _buildReviewSectionTitle('4. Income & Other Assets'),
             _buildReviewRow('Total Annual Income', _estimatedAnnualIncomeCtrl.text),
-            _buildReviewRow('Has Tractor?', _assetTractor),
-            _buildReviewRow('Has Two-Wheeler?', _assetTwoWheeler),
-            _buildReviewRow('Has Motorcar?', _assetMotorcar),
-            _buildReviewRow('Cow Count', _livestockCowCtrl.text),
-            _buildReviewRow('Buffalo Count', _livestockBuffaloCtrl.text),
-            _buildReviewRow('Goat Count', _livestockGoatCtrl.text),
+            _buildReviewRow('Asset Records', _assetRecords.isNotEmpty ? '${_assetRecords.length} record(s)' : 'None'),
+            for (var asset in _assetRecords)
+              Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildReviewRow(asset.nameCtrl.text, 'Count: ${asset.countCtrl.text}')),
+
+            _buildReviewRow('Livestock Records', _livestockRecords.isNotEmpty ? '${_livestockRecords.length} record(s)' : 'None'),
+            for (var livestock in _livestockRecords)
+              Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildReviewRow(livestock.nameCtrl.text, 'Count: ${livestock.countCtrl.text}')),
+
 
             // Step 5 Review
             _buildReviewSectionTitle('5. Finance & Verification'),
