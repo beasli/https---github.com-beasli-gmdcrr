@@ -356,9 +356,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
       } else {
   final Position p = pos;
   setState(() { _lat = p.latitude; _lng = p.longitude; _gpsLocation = '$_lat,$_lng'; });
-        // Use nearby village API with stored access token (if available)
-        final token = await AuthService().getToken();
-  final nearby = await VillageService().fetchNearbyByLatLng(_lat!, _lng!, bearerToken: token);
+        // Use nearby village API. The service now handles auth internally.
+        final nearby = await VillageService().fetchNearbyByLatLng(_lat!, _lng!);
         if (nearby != null && nearby['data'] != null && nearby['data']['village'] != null) {
           final v = nearby['data']['village'];
           // capture remote survey id if present so we can update on submit

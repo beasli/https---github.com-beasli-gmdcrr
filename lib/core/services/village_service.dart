@@ -2,15 +2,18 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../config/env.dart';
+import 'auth_service.dart';
 import '../utils/url_builder.dart';
 
 class VillageService {
   final Dio _dio = Dio();
+  final AuthService _authService = AuthService();
 
   /// Fetch nearby village using the project API.
   /// Returns the parsed response map or null on failure.
-  Future<Map<String, dynamic>?> fetchNearbyByLatLng(double lat, double lon, {String? bearerToken}) async {
+  Future<Map<String, dynamic>?> fetchNearbyByLatLng(double lat, double lon) async {
     try {
+      final bearerToken = await _authService.getToken();
       final headers = <String, dynamic>{
         'accept': '*/*',
       };
