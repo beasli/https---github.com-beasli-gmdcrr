@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:typed_data';
+import './family_survey_service.dart';
+import '../village/camera_capture.dart';
+import '../../core/services/village_service.dart';
+import '../../core/config/api.dart';
 import 'package:signature/signature.dart';
+import '../../core/config/env.dart';
 
 /// Data model for a single family member.
 class FamilyMember {
@@ -22,6 +27,7 @@ class FamilyMember {
   TextEditingController artisanSkillCtrl = TextEditingController();
   String? skillTrainingInterest;
   String? handicapped;
+  String? photoUrl; // Changed from photoPath to store remote URL
 }
 
 /// Data model for a single tree record.
@@ -30,7 +36,7 @@ class TreeRecord {
   TextEditingController nameCtrl = TextEditingController();
   TextEditingController countCtrl = TextEditingController();
   TextEditingController ageCtrl = TextEditingController();
-  String? photoPath;
+  String? photoUrl;
 }
 
 /// Data model for a single land record.
@@ -52,7 +58,7 @@ class AssetRecord {
   final UniqueKey key = UniqueKey();
   TextEditingController nameCtrl = TextEditingController();
   TextEditingController countCtrl = TextEditingController();
-  String? photoPath;
+  String? photoUrl;
 }
 
 /// Data model for a single livestock record.
@@ -61,7 +67,7 @@ class LivestockRecord {
   TextEditingController nameCtrl = TextEditingController();
   TextEditingController countCtrl = TextEditingController();
   String? cattlePaddyType;
-  String? photoPath;
+  String? photoUrl;
 }
 
 
@@ -75,6 +81,10 @@ class FamilySurveyFormPage extends StatefulWidget {
 class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   int _currentStep = 0;
   bool _isProcessing = false;
+  bool _isUploading = false;
+
+  final FamilySurveyService _surveyService = FamilySurveyService();
+  final VillageService _villageService = VillageService();
 
   // Form Keys for each step
   final _step1Key = GlobalKey<FormState>();
@@ -89,7 +99,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   final _villageNameCtrl = TextEditingController();
   final _laneCtrl = TextEditingController();
   final _houseNoCtrl = TextEditingController();
-  String? _photoPath;
+  int? _villageId;
 
   // Head of the family is the first member in our list.
   // Additional members will be added here.
@@ -115,7 +125,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   String? _residenceFuelFacility;
   String? _residenceSolarEnergy;
   String? _residenceDocumentaryEvidence;
-  String? _housePhotoPath;
+  String? _housePhotoUrl;
 
   // Step 3: Land & Tree Assets Controllers
   String? _landHolds;
@@ -186,6 +196,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     _incomeLaborCtrl.addListener(_calculateTotalIncome);
     _incomeHouseworkCtrl.addListener(_calculateTotalIncome);
     _incomeOtherCtrl.addListener(_calculateTotalIncome);
+
+    // Automatically capture location and find village on page load.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _captureGpsLocation());
   }
 
   void _calculateTotalIncome() {
@@ -261,6 +274,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   }
 
   void _disposeMemberControllers(FamilyMember member) {
+    // photoUrl is just a string, no controller
     member.nameCtrl.dispose();
     member.relationshipCtrl.dispose();
     member.ageCtrl.dispose();
@@ -271,6 +285,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     member.mobileCtrl.dispose();
     member.artisanSkillCtrl.dispose();
   }
+
 
   void _addFamilyMember() {
     setState(() {
@@ -360,29 +375,109 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     });
   }
 
-  Future<void> _captureGpsLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  /// Generic photo capture and upload logic.
+  /// [onUploadComplete] is a callback that receives the remote URL.
+  Future<void> _captureAndUploadPhoto(Function(String) onUploadComplete) async {
+    if (_isUploading) return;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location services are disabled.')));
-      return;
+    // Navigate to the custom camera capture page
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(builder: (_) => const CameraCapturePage()),
+    );
+
+    // User may have cancelled
+    if (result == null || result['path'] == null || result['bytes'] == null) return;
+
+    final String photoPath = result['path'];
+    final Uint8List photoBytes = result['bytes'];
+
+    setState(() => _isUploading = true);
+
+    // Show a snackbar to indicate upload is in progress
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Uploading photo...'), duration: Duration(minutes: 2)), // Long duration
+    );
+
+    final remoteUrl = await _surveyService.uploadDocument(photoBytes, photoPath);
+
+    // Hide the uploading snackbar
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    setState(() => _isUploading = false);
+
+    if (remoteUrl != null) {
+      onUploadComplete(remoteUrl);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo uploaded successfully!'), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo upload failed. Please try again.'), backgroundColor: Colors.red),
+      );
     }
+  }
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+  Future<void> _captureGpsLocation() async {
+    if (!mounted) return;
+
+    double lat, lon;
+
+    // For staging/dev, use a fixed location to simplify testing
+    if (AppConfig.currentEnvironment != Environment.production) {
+      lat = 21.6701;
+      lon = 72.2319;
+    } else {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location services are disabled.')));
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are denied.')));
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are denied.')));
+          return;
+        }
+      }
+
+      try {
+        final position = await Geolocator.getCurrentPosition();
+        lat = position.latitude;
+        lon = position.longitude;
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to get location.')));
         return;
       }
     }
 
-    final position = await Geolocator.getCurrentPosition();
     setState(() {
-      _finalGpsLocation = '${position.latitude}, ${position.longitude}';
+      _finalGpsLocation = '$lat, $lon';
     });
+
+    if (!mounted) return;
+
+    // Now, fetch the nearby village using the obtained coordinates
+    final villageData = await _villageService.fetchNearbyByLatLng(lat, lon);
+    if (mounted && villageData != null && villageData['data'] != null) {
+      setState(() {
+        _villageId = villageData['data']['village']['survey_id'];
+        _villageNameCtrl.text = villageData['data']['village']['name'] ?? 'N/A';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Village found: ${_villageNameCtrl.text}'), backgroundColor: Colors.green),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not find a nearby village.'), backgroundColor: Colors.orange),
+      );
+    } else {
+      // The widget was disposed during the async operation.
+    }
   }
 
   void _onStepContinue() {
@@ -409,13 +504,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     }
 
     if (isStepValid) {
-      if (_currentStep < _getSteps().length - 1) {
-      setState(() {
-        _currentStep++;
-      });
-    } else {
-      _handleSubmit();
-    }
+        if (_currentStep < _getSteps().length - 1) {
+            setState(() {
+                _currentStep++;
+            });
+        } else {
+            // This case is now handled by the bottom navigation bar's submit button directly.
+        }
     }
   }
   void _onStepCancel() {
@@ -426,29 +521,171 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     }
   }
 
+  /// Gathers all data from the form controllers and state into a JSON-compatible map.
+  Future<Map<String, dynamic>?> _gatherSurveyData(String status) async {
+    // 1. Upload signature and get URL
+    String? signatureUrl;
+    if (_signatureController.isNotEmpty) {
+      final signatureBytes = await _signatureController.toPngBytes();
+      if (signatureBytes != null) {
+        // Create a unique filename for the signature
+        final signaturePath = 'signatures/sig_${DateTime.now().millisecondsSinceEpoch}.png';
+        signatureUrl = await _surveyService.uploadDocument(signatureBytes, signaturePath);
+      }
+    }
+
+    if (_signatureController.isNotEmpty && signatureUrl == null) {
+      // Failed to upload a required signature
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to upload signature. Please try again.'), backgroundColor: Colors.red),
+      );
+      return null;
+    }
+
+    // 2. Parse GPS coordinates
+    double? lat, lon;
+    if (_finalGpsLocation != null) {
+      final parts = _finalGpsLocation!.split(',');
+      if (parts.length == 2) {
+        lat = double.tryParse(parts[0].trim());
+        lon = double.tryParse(parts[1].trim());
+      }
+    }
+
+    // 3. Assemble the payload
+    final payload = {
+      "family": {
+        "village_id": _villageId,
+        "signature_url": signatureUrl,
+        "lat": lat,
+        "lon": lon,
+        "status": status, // 'submitted' or 'draft'
+        "lane": _laneCtrl.text,
+        "house_no": _houseNoCtrl.text,
+      },
+      "members": _familyMembers.map((m) => {
+        "name": m.nameCtrl.text,
+        "relationship_with_head": m.relationshipCtrl.text,
+        "gender": m.gender, // Assuming 'M'/'F' is acceptable, or map to 'Male'/'Female'
+        "age": int.tryParse(m.ageCtrl.text) ?? 0,
+        "marital_status": m.maritalStatus,
+        "religion": m.religionCtrl.text,
+        "caste_category": m.caste,
+        "handicapped": m.handicapped == 'Yes',
+        "aadhar_no": m.aadharCtrl.text,
+        "mobile_no": m.mobileCtrl.text,
+        "education_qualification": m.educationCtrl.text,
+        "studying_in_progress": m.studying == 'Yes',
+        "artisan_details": m.artisanSkillCtrl.text,
+        "interested_in_training": m.skillTrainingInterest == 'Yes',
+        "photo_url": m.photoUrl,
+        "bpl_card_no": m.bplCardCtrl.text,
+      }).toList(),
+      "accommodation": {
+        "residence_years": int.tryParse(_residenceAgeCtrl.text) ?? 0,
+        "authorized": _residenceAuthorized == 'Yes',
+        "ownership": _residenceOwnerTenant,
+        "total_rooms": int.tryParse(_residenceTotalRoomsCtrl.text) ?? 0,
+        "house_type": _residencePakkaKachha,
+        "roof_type": _residenceRoofType,
+        "land_area": _residencePlotAreaCtrl.text,
+        "total_construction_area": _residenceConstructionAreaCtrl.text,
+        "interested_in_rr_colony": _residenceRrColonyInterest == 'Yes',
+        "interested_in_own_life": _residenceLiveOwnLifeInterest == 'Yes',
+        "has_well_or_borewell": _residenceWellBorewell == 'Yes',
+        "has_toilet_facility": _residenceToiletFacilities == 'Yes',
+        "has_cesspool": _residenceCesspool == 'Yes',
+        "drainage_facility": _residenceDrainageFacility,
+        "has_water_tap_facility": _residenceWaterTap == 'Yes',
+        "has_electricity_facility": _residenceElectricity == 'Yes',
+        "fuel_facility": _residenceFuelFacility,
+        "has_solar_energy_facility": _residenceSolarEnergy == 'Yes',
+        "documentary_evidence": _residenceDocumentaryEvidence == 'Yes',
+        "photo_house_url": _housePhotoUrl,
+      },
+      "holds_land": _landHolds,
+      "lands": _landRecords.map((l) => {
+        "khata_no": l.khataNoCtrl.text,
+        "land_type": l.landType,
+        "total_area": l.totalAreaCtrl.text,
+        "acquired_area": l.acquiredAreaCtrl.text,
+        "remaining_area": l.remainingAreaCtrl.text,
+        "has_documentary_evidence": l.hasDocumentaryEvidence,
+        "is_land_mortgaged": l.isLandMortgaged,
+        "land_mortgaged_to": l.landMortgagedToCtrl.text,
+        "land_mortgaged_details": l.landMortgagedDetailsCtrl.text,
+      }).toList(),
+      "trees": _treeRecords.map((t) => {
+        "name": t.nameCtrl.text,
+        "number_of_trees": int.tryParse(t.countCtrl.text) ?? 0,
+        "age_of_tree": int.tryParse(t.ageCtrl.text) ?? 0,
+        "tree_photo": t.photoUrl,
+      }).toList(),
+      "assets": _assetRecords.map((a) => {
+        "name": a.nameCtrl.text,
+        "count": int.tryParse(a.countCtrl.text) ?? 0,
+        "asset_photo": a.photoUrl,
+      }).toList(),
+      "livestocks": _livestockRecords.map((l) => {
+        "name": l.nameCtrl.text,
+        "count": int.tryParse(l.countCtrl.text) ?? 0,
+        "livestock_photo": l.photoUrl,
+        "cattle_paddy_type": l.cattlePaddyType,
+      }).toList(),
+      // TODO: Add income, expense, and loan objects
+    };
+    return payload;
+  }
+
   Future<void> _handleSubmit() async {
     setState(() => _isProcessing = true);
-    // TODO: Implement validation and submission logic
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network request
+
+    final surveyData = await _gatherSurveyData('submitted');
+    if (surveyData == null) {
+      setState(() => _isProcessing = false);
+      return; // Data gathering or signature upload failed
+    }
+
+    final success = await _surveyService.submitSurvey(surveyData);
+
     setState(() => _isProcessing = false);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Survey submitted successfully!')),
-      );
-      Navigator.of(context).pop();
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Survey submitted successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Survey submission failed. Please try again.'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
   Future<void> _handleSaveDraft() async {
     setState(() => _isProcessing = true);
-    // TODO: Implement save draft logic
-    await Future.delayed(const Duration(seconds: 1)); // Simulate saving
+
+    final surveyData = await _gatherSurveyData('draft');
+    if (surveyData == null) {
+      setState(() => _isProcessing = false);
+      return; // Data gathering or signature upload failed
+    }
+
+    final success = await _surveyService.submitSurvey(surveyData);
+
     setState(() => _isProcessing = false);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Draft saved!')),
-      );
-      Navigator.of(context).pop();
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Draft saved successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save draft. Please try again.'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -528,6 +765,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           value: member.skillTrainingInterest,
           decoration: const InputDecoration(labelText: 'Interested in Skill Training?'),
           items: ['Yes', 'No'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          // TODO: This should probably be a boolean in the model
           onChanged: (val) => setState(() => member.skillTrainingInterest = val),
           validator: (v) => v == null ? 'Required' : null,
         ),
@@ -558,13 +796,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.camera_alt),
-          title: Text(tree.photoPath ?? 'Capture Tree Photo'),
-          onTap: () {
-            // TODO: Implement photo capture for this specific tree record
-            // You would likely pass the index to the capture logic and update
-            // setState(() => tree.photoPath = newPath);
-          },
-          trailing: tree.photoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
+          title: Text(tree.photoUrl != null ? 'Photo Captured' : 'Capture Tree Photo'),
+          onTap: () => _captureAndUploadPhoto((url) => setState(() => tree.photoUrl = url)),
+          trailing: tree.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
         ),
         const Divider(height: 32, thickness: 1),
       ],
@@ -624,9 +858,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.camera_alt),
-          title: Text(asset.photoPath ?? 'Capture Asset Photo'),
-          onTap: () { /* TODO: Implement photo capture */ },
-          trailing: asset.photoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
+          title: Text(asset.photoUrl != null ? 'Photo Captured' : 'Capture Asset Photo'),
+          onTap: () => _captureAndUploadPhoto((url) => setState(() => asset.photoUrl = url)),
+          trailing: asset.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
         ),
         const Divider(height: 32, thickness: 1),
       ],
@@ -648,7 +882,12 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         TextFormField(controller: livestock.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Livestock (e.g., Cow, Goat)'), validator: _validateRequired),
         TextFormField(controller: livestock.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
         _buildDropdown('Cattle Paddy Type', livestock.cattlePaddyType, ['Raw', 'Ripe', 'N/A'], (val) => setState(() => livestock.cattlePaddyType = val)),
-        ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.camera_alt), title: Text(livestock.photoPath ?? 'Capture Livestock Photo'), onTap: () { /* TODO: Implement photo capture */ }, trailing: livestock.photoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null),
+        ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.camera_alt),
+            title: Text(livestock.photoUrl != null ? 'Photo Captured' : 'Capture Livestock Photo'),
+            onTap: () => _captureAndUploadPhoto((url) => setState(() => livestock.photoUrl = url)),
+            trailing: livestock.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null),
         const Divider(height: 32, thickness: 1),
       ],
     );
@@ -686,15 +925,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Head of Family Details', style: Theme.of(context).textTheme.titleLarge),
             TextFormField(controller: _familyNoCtrl, decoration: const InputDecoration(labelText: 'Family No.'), readOnly: true),
-            TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village Name'), validator: _validateRequired),
+            TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village Name'), readOnly: true, validator: _validateRequired),
             TextFormField(controller: _laneCtrl, decoration: const InputDecoration(labelText: 'Name of the Lane'), validator: _validateRequired),
             TextFormField(controller: _houseNoCtrl, decoration: const InputDecoration(labelText: 'House No.'), validator: _validateRequired),
             const SizedBox(height: 16),
             _buildMemberForm(_familyMembers[0], 0), // Form for the Head of Family
             const SizedBox(height: 16),
             Text('Photo & Document Capture', style: Theme.of(context).textTheme.titleLarge),
-            // TODO: Implement photo capture logic
-            ListTile(leading: const Icon(Icons.camera_alt), title: Text(_photoPath ?? 'Capture photo of person'), onTap: () {}, trailing: _photoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text(_familyMembers[0].photoUrl != null ? 'Photo Captured' : 'Capture photo of person'),
+              onTap: () => _captureAndUploadPhoto((url) => setState(() => _familyMembers[0].photoUrl = url)),
+              trailing: _familyMembers[0].photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
+            ),
             const Divider(height: 32, thickness: 1),
             Text('Other Family Members', style: Theme.of(context).textTheme.titleLarge),
             ..._familyMembers.asMap().entries.where((entry) => entry.key > 0).map((entry) => _buildMemberForm(entry.value, entry.key)),
@@ -737,9 +980,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildDropdown('Is there documentary evidence?', _residenceDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() => _residenceDocumentaryEvidence = val)),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: Text(_housePhotoPath ?? 'Capture House/Document Photo'),
-              onTap: () { /* TODO: Implement photo capture */ },
-              trailing: _housePhotoPath != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
+              title: Text(_housePhotoUrl != null ? 'Photo Captured' : 'Capture House/Document Photo'),
+              onTap: () => _captureAndUploadPhoto((url) => setState(() => _housePhotoUrl = url)),
+              trailing: _housePhotoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
             ),
           ]),
         ),
@@ -836,7 +1079,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.gps_fixed, color: _finalGpsLocation != null ? Colors.green : null),
-              title: Text(_finalGpsLocation ?? 'GPS Location Status: Pending'),
+              title: Text(_finalGpsLocation ?? 'Capturing GPS...'),
               subtitle: const Text('Capture GPS'),
               onTap: _captureGpsLocation,
             ),
@@ -877,6 +1120,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   _buildReviewRow('Gender', _familyMembers[i].gender),
                   _buildReviewRow('Age', _familyMembers[i].ageCtrl.text),
                   _buildReviewRow('Marital Status', _familyMembers[i].maritalStatus),
+                  _buildReviewRow('Photo', _familyMembers[i].photoUrl != null ? 'Captured' : 'Not Captured'),
                   _buildReviewRow('Aadhar No.', _familyMembers[i].aadharCtrl.text),
                   _buildReviewRow('Mobile No.', _familyMembers[i].mobileCtrl.text),
                 ],
@@ -890,6 +1134,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildReviewRow('House Type', _residencePakkaKachha),
             _buildReviewRow('Toilet Facilities', _residenceToiletFacilities),
             _buildReviewRow('Electricity', _residenceElectricity),
+            _buildReviewRow('House Photo', _housePhotoUrl != null ? 'Captured' : 'Not Captured'),
             _buildReviewRow('Fuel Facility', _residenceFuelFacility),
 
             // Step 3 Review
@@ -979,14 +1224,21 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           steps: _getSteps(),
         ),
       ),
-      bottomNavigationBar: SafeArea(
+      bottomNavigationBar: _isProcessing
+          ? const LinearProgressIndicator()
+          : SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
               Expanded(child: OutlinedButton(onPressed: _isProcessing ? null : _handleSaveDraft, child: const Text('Save Draft'))),
-              const SizedBox(width: 16),
-              Expanded(child: ElevatedButton(onPressed: _isProcessing ? null : _handleSubmit, child: _isProcessing ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))) : const Text('Submit Survey'))),
+              const SizedBox(width: 16), 
+              Expanded(
+                  child: ElevatedButton(
+                      onPressed: _isProcessing ? null : (_currentStep == _getSteps().length - 1 ? _handleSubmit : _onStepContinue),
+                      child: _isProcessing
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
+                          : Text(_currentStep == _getSteps().length - 1 ? 'Submit Survey' : 'Continue'))),
             ],
           ),
         ),

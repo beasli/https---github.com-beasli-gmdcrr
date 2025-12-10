@@ -70,6 +70,7 @@ class _CameraCapturePageState extends State<CameraCapturePage> with WidgetsBindi
 
     try {
       final file = await _ctrl!.takePicture();
+      final bytes = await file.readAsBytes();
       // capture location (may fail on web or if permission denied)
       double? lat, lng;
       try {
@@ -80,7 +81,7 @@ class _CameraCapturePageState extends State<CameraCapturePage> with WidgetsBindi
         // ignore geolocation errors, return null coords
       }
       if (!mounted) return;
-      Navigator.of(context).pop({'path': file.path, 'lat': lat, 'lng': lng});
+      Navigator.of(context).pop({'path': file.path, 'bytes': bytes, 'lat': lat, 'lng': lng});
     } on CameraException catch (e, st) {
       debugPrint('Failed to take picture: $e\n$st');
       if (!mounted) return;
