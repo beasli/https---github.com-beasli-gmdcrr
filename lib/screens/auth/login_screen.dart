@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import '../../core/config/env.dart';
 import '../../core/services/auth_service.dart';
-import '../village/village_form.dart';
-import '../village/local_entries.dart';
-import '../family/family_survey_form.dart';
+import '../home/home_page.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -48,9 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Save token, navigate to Home
     // For now, in-memory - later use shared_preferences
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
   } else {
     setState(() {
       _errorMessage = token;
@@ -113,55 +109,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// Dummy home screen—replace later with your main menu/dashboard
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Home")),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton(
-              child: const Text("Village Survey"),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VillageFormPage()));
-              },
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              child: const Text("Family Survey"),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilySurveyFormPage()));
-              },
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              child: const Text("Pending Entries"),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage()));
-              },
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              child: const Text("Logout"),
-              onPressed: () async {
-                await AuthService().logout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false, // Remove all previous routes
-                );
-              },
-            ),
-          ],
         ),
       ),
     );
