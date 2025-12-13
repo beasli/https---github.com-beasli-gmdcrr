@@ -57,12 +57,14 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> {
     setState(() => _loadingMessage = 'Finding nearby village...');
 
     final villageData = await _villageService.fetchNearbyByLatLng(lat, lon);
-    if (mounted && villageData?['data']?['village']?['name'] != null) {
-      final villageName = villageData!['data']['village']['name'] as String;
+    if (mounted && villageData?['data']?['village'] != null) {
+      final village = villageData!['data']['village'];
+      final villageId = village['id'] as int;
+      final villageName = village['name'] as String;
       setState(() {
         _villageName = villageName;
         _loadingMessage = 'Loading surveys for $_villageName...';
-        _surveysFuture = _surveyService.fetchSurveysByVillageName(villageName);
+        _surveysFuture = _surveyService.fetchUserSurveysByVillage(villageId);
       });
     } else if (mounted) {
       setState(() {
@@ -83,12 +85,14 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> {
   }
 
   /// Navigates to the form to create a new survey and reloads the list upon return.
-  Future<void> _navigateToSurveyForm() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const FamilySurveyFormPage()), // For new survey
+  Future<void> _navigateToSurveyForm({int? surveyId}) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (context) => FamilySurveyFormPage(familySurveyId: surveyId)),
     );
-    // Reload the list when returning from the form page.
-    _refreshData(); // Reloads the list to show the newly added survey
+    // If the form was popped with a 'true' result, it means data was saved.
+    if (result == true) {
+      _refreshData(); // Reload the list to show the new/updated survey
+    }
   }
 
   /// Returns a color based on the survey status.
@@ -190,36 +194,27 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> {
             itemCount: surveys.length,
             itemBuilder: (context, index) {
               final survey = surveys[index];
-              // Safely access nested data.
-              final familyMembers = survey['family_members'] as List<dynamic>? ?? [];
-              final headMember = familyMembers.isNotEmpty ? familyMembers.firstWhere((m) => m['relationship_with_head'] == 'Head', orElse: () => familyMembers.first) : null;
-              final headName = headMember?['name'] as String? ?? 'N/A';
-
-              final villageName = survey['village']?['name'] as String? ?? 'N/A';
+              final familyId = survey['id'] as int? ?? 0;
+              final headName = survey['head_name'] as String? ?? 'N/A';
               final status = survey['status'] as String? ?? 'Unknown';
+              final houseNo = survey['house_no'] as String? ?? 'N/A';
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: _getStatusColor(status),
-                    child: Text(headName.isNotEmpty ? headName[0] : '?', style: const TextStyle(color: Colors.white)),
+                    child: Text(headName.isNotEmpty ? headName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.white)),
                   ),
                   title: Text(headName),
-                  subtitle: Text(villageName),
+                  subtitle: Text('ID: $familyId • House No: $houseNo'),
                   trailing: Chip(
                     label: Text(status, style: const TextStyle(color: Colors.white)),
                     backgroundColor: _getStatusColor(status),
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                   onTap: () {
-                    final surveyId = survey['id'] as int?;
-                    if (surveyId == null) return;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => FamilySurveyFormPage(familySurveyId: surveyId),
-                      ),
-                    );
+                    _navigateToSurveyForm(surveyId: familyId);
                   },
                 ),
               );
@@ -228,7 +223,7 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToSurveyForm,
+        onPressed: () => _navigateToSurveyForm(), // Call without a surveyId for a new survey
         tooltip: 'New Survey',
         child: const Icon(Icons.add),
       ),

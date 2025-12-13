@@ -107,22 +107,22 @@ class FamilySurveyService {
     return null;
   }
 
-  /// Fetches a list of family surveys for a specific village.
+  /// Fetches a list of family surveys for the logged-in user, optionally filtered by village ID.
   ///
-  /// Takes a [villageName].
+  /// Takes a [villageId].
   /// Returns a list of survey data on success, or an empty list on failure.
-  Future<List<dynamic>> fetchSurveysByVillageName(String villageName) async {
+  Future<List<dynamic>> fetchUserSurveysByVillage(int villageId) async {
     try {
       final bearerToken = await _authService.getToken();
       final headers = <String, dynamic>{'accept': '*/*'};
       if (bearerToken != null && bearerToken.isNotEmpty) {
         headers['Authorization'] = 'Bearer $bearerToken';
       }
-
+  
       final response = await _dio.get(
-        '$_baseUrl/family-survey',
+        '$_baseUrl/family-survey/user',
         queryParameters: {
-          'villageNames': villageName,
+          'villageIds': villageId,
           'page': 1,
           'limit': 100, // Fetching up to 100 surveys, adjust if pagination is needed
           'sort-by': 'Newest First',
@@ -134,7 +134,7 @@ class FamilySurveyService {
         return response.data['data']['family_surveys'] as List<dynamic>;
       }
     } on DioException catch (e) {
-      print('Error fetching surveys by village: ${e.response?.data ?? e.message}');
+      print('Error fetching user surveys by village: ${e.response?.data ?? e.message}');
     }
     return []; // Return an empty list on failure or if data is not in the expected format.
   }

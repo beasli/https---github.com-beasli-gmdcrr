@@ -471,7 +471,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     final villageData = await _villageService.fetchNearbyByLatLng(lat, lon);
     if (mounted && villageData != null && villageData['data'] != null) {
       setState(() {
-        _villageId = villageData['data']['village']['survey_id'];
+        _villageId = villageData['data']['village']['id'];
         _villageNameCtrl.text = villageData['data']['village']['name'] ?? 'N/A';
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -533,7 +533,12 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           final member = FamilyMember();
           member.nameCtrl.text = memberData['name']?.toString() ?? '';
           member.relationshipCtrl.text = memberData['relationship_with_head']?.toString() ?? '';
-          member.gender = memberData['gender']?.toString();
+          // Map API gender ('Male'/'Female') to form value ('M'/'F')
+          final apiGender = memberData['gender']?.toString();
+          if (apiGender != null) {
+            if (apiGender.toLowerCase() == 'male') member.gender = 'M';
+            if (apiGender.toLowerCase() == 'female') member.gender = 'F';
+          }
           member.ageCtrl.text = memberData['age']?.toString() ?? '';
           member.maritalStatus = memberData['marital_status']?.toString();
           member.religionCtrl.text = memberData['religion']?.toString() ?? '';
@@ -700,7 +705,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       "members": _familyMembers.map((m) => {
         "name": m.nameCtrl.text,
         "relationship_with_head": m.relationshipCtrl.text,
-        "gender": m.gender, // Assuming 'M'/'F' is acceptable, or map to 'Male'/'Female'
+        // Map form value ('M'/'F') to API gender ('Male'/'Female')
+        "gender": (m.gender == 'M') ? 'Male' : (m.gender == 'F' ? 'Female' : null),
         "age": int.tryParse(m.ageCtrl.text) ?? 0,
         "marital_status": m.maritalStatus,
         "religion": m.religionCtrl.text, // This was missing from the model
@@ -722,8 +728,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "total_rooms": int.tryParse(_residenceTotalRoomsCtrl.text) ?? 0,
         "house_type": _residencePakkaKachha,
         "roof_type": _residenceRoofType,
-        "land_area": _residencePlotAreaCtrl.text,
-        "total_construction_area": _residenceConstructionAreaCtrl.text,
+        "land_area": double.tryParse(_residencePlotAreaCtrl.text) ?? 0.0,
+        "total_construction_area": double.tryParse(_residenceConstructionAreaCtrl.text) ?? 0.0,
         "interested_in_rr_colony": _residenceRrColonyInterest == 'Yes',
         "interested_in_own_life": _residenceLiveOwnLifeInterest == 'Yes',
         "has_well_or_borewell": _residenceWellBorewell == 'Yes',
@@ -737,15 +743,15 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "documentary_evidence": _residenceDocumentaryEvidence == 'Yes',
         "photo_house_url": _housePhotoUrl,
       },
-      "holds_land": _landHolds,
+      "holds_land": _landHolds == 'Yes',
       "lands": _landRecords.map((l) => {
         "khata_no": l.khataNoCtrl.text,
         "land_type": l.landType,
-        "total_area": l.totalAreaCtrl.text,
-        "acquired_area": l.acquiredAreaCtrl.text,
-        "remaining_area": l.remainingAreaCtrl.text,
-        "has_documentary_evidence": l.hasDocumentaryEvidence,
-        "is_land_mortgaged": l.isLandMortgaged,
+        "total_area": double.tryParse(l.totalAreaCtrl.text) ?? 0,
+        "acquired_area": double.tryParse(l.acquiredAreaCtrl.text) ?? 0,
+        "remaining_area": double.tryParse(l.remainingAreaCtrl.text) ?? 0,
+        "has_documentary_evidence": l.hasDocumentaryEvidence == 'Yes',
+        "is_land_mortgaged": l.isLandMortgaged == 'Yes',
         "land_mortgaged_to": l.landMortgagedToCtrl.text,
         "land_mortgaged_details": l.landMortgagedDetailsCtrl.text,
       }).toList(),
@@ -788,7 +794,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Survey submitted successfully!'), backgroundColor: Colors.green),
         );
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true); // Pop with a result to signal a refresh
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Survey submission failed. Please try again.'), backgroundColor: Colors.red),
@@ -814,7 +820,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Draft saved successfully!'), backgroundColor: Colors.green),
         );
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true); // Pop with a result to signal a refresh
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to save draft. Please try again.'), backgroundColor: Colors.red),
