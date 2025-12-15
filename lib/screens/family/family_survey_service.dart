@@ -47,7 +47,7 @@ class FamilySurveyService {
   /// If [familySurveyId] is provided, it updates an existing survey (PUT).
   /// Otherwise, it creates a new one (POST).
   /// Returns true on success, false on failure.
-  Future<bool> submitSurvey(Map<String, dynamic> surveyData, {int? familySurveyId}) async {
+  Future<Map<String, dynamic>> submitSurvey(Map<String, dynamic> surveyData, {int? familySurveyId}) async {
     try {
       final bearerToken = await _authService.getToken();
       final headers = <String, dynamic>{
@@ -79,11 +79,17 @@ class FamilySurveyService {
         );
       }
 
-      // Assuming 200 or 201 indicates success
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': response.data,
+        };
+      }
+
+      return {'success': false};
     } on DioException catch (e) {
       print('Error submitting survey: ${e.response?.data ?? e.message}');
-      return false;
+      return {'success': false};
     }
   }
 

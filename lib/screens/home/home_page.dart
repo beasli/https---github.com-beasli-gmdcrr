@@ -10,44 +10,66 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Home")),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton(
-              child: const Text("Village Survey"),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VillageFormPage()));
-              },
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              child: const Text("Family Survey"),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilySurveyListPage()));
-              },
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              child: const Text("Pending Entries"),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage()));
-              },
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              child: const Text("Logout"),
-              onPressed: () async {
-                await AuthService().logout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false, // Remove all previous routes
-                );
-              },
-            ),
-          ],
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit App?'),
+            content: const Text('Are you sure you want to exit the application?'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Exit'),
+              ),
+            ],
+          ),
+        );
+        return shouldPop ?? false;
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text("Home")),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                child: const Text("Village Survey"),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VillageFormPage()));
+                },
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                child: const Text("Family Survey"),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilySurveyListPage()));
+                },
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                child: const Text("Pending Entries"),
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage()));
+                },
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                child: const Text("Logout"),
+                onPressed: () async {
+                  await AuthService().logout();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false, // Remove all previous routes
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
