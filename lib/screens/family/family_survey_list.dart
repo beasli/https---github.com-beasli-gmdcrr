@@ -135,6 +135,13 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
     );
     // If the form was popped with a 'true' result, it means data was saved.
     if (result == true) {
+      // Show success message after returning to the list
+      // This ensures the SnackBar is visible in the correct context.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Survey submitted successfully!'), backgroundColor: Colors.green),
+        );
+      }
       _refreshData(); // Reload the list to show the new/updated survey
     }
   }
@@ -210,7 +217,7 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
   /// Returns a color based on the survey status.
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'submitted':
+      case 'completed':
         return Colors.green;
       case 'draft':
         return Colors.orange;

@@ -88,6 +88,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   bool _isUploading = false;
   bool _isLoadingSurvey = false;
   int? _localDbId; // Unique ID for the local draft instance
+  String? _signatureUrl;
 
   final LocalDb _localDb = LocalDb();
   final FamilySurveyService _surveyService = FamilySurveyService();
@@ -481,7 +482,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     // User may have cancelled
     if (result == null || result['path'] == null || result['bytes'] == null) return;
 
-    final String photoPath = result['path'];
+    final String photoPath = result['path']+'.jpg';
     final Uint8List photoBytes = result['bytes'];
 
     setState(() => _isUploading = true);
@@ -629,6 +630,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _houseNoCtrl.text = family['house_no']?.toString() ?? '';
         if (family['lat'] != null && family['lon'] != null) {
           _finalGpsLocation = '${family['lat']}, ${family['lon']}';
+          _signatureUrl = family['signature_url'] as String?;
         }
       }
 
@@ -721,8 +723,40 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         }
       }
 
-      // TODO: Populate other steps (Income, Assets, Livestock, Expenses, Loans) in a similar fashion.
+      // Step 4: Assets
+      final assets = surveyRoot['assets'] as List<dynamic>?;
+      if (assets != null) {
+        _assetRecords.clear();
+        for (var assetData in assets) {
+          final record = AssetRecord();
+          record.nameCtrl.text = assetData['name']?.toString() ?? '';
+          record.countCtrl.text = assetData['count']?.toString() ?? '';
+          record.photoUrl = assetData['asset_photo'] as String?;
+          _assetRecords.add(record);
+        }
+      }
+
+      // Step 4: Livestocks
+      final livestocks = surveyRoot['livestocks'] as List<dynamic>?;
+      if (livestocks != null) {
+        _livestockRecords.clear();
+        for (var livestockData in livestocks) {
+          final record = LivestockRecord();
+          record.nameCtrl.text = livestockData['name']?.toString() ?? '';
+          record.countCtrl.text = livestockData['count']?.toString() ?? '';
+          record.cattlePaddyType = livestockData['cattle_paddy_type']?.toString();
+          record.photoUrl = livestockData['livestock_photo'] as String?;
+          _livestockRecords.add(record);
+        }
+      }
+
+      // TODO: Populate other steps (Income, Expenses, Loans) in a similar fashion.
       // This part is left as an exercise but follows the same pattern as above.
+      // Example for income:
+      // final income = surveyRoot['income'] as Map<String, dynamic>?;
+      // if (income != null) {
+      //   _incomeFarmingCtrl.text = income['farming']?.toString() ?? '';
+      // }
     });
   }
 
@@ -891,7 +925,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   Future<void> _handleSubmit() async {
     setState(() => _isProcessing = true);
 
-    final surveyData = await _gatherSurveyData('submitted');
+    final surveyData = await _gatherSurveyData('completed');
     if (surveyData == null) {
       setState(() => _isProcessing = false);
       return; // Data gathering or signature upload failed
@@ -902,9 +936,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() => _isProcessing = false);
     if (mounted) {
       if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Survey submitted successfully!'), backgroundColor: Colors.green),
-        );
         // On success, delete the local draft from the device
         if (_localDbId != null) {
           await _localDb.deleteFamilySurvey(_localDbId!);
@@ -935,9 +966,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() => _isProcessing = false);
     if (mounted) {
       if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Draft saved successfully!'), backgroundColor: Colors.green),
-        );
         // On success, delete the local draft from the device
         if (_localDbId != null) {
           await _localDb.deleteFamilySurvey(_localDbId!);
@@ -1350,11 +1378,21 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
             const SizedBox(height: 16),
             const Text('Digital Signature of Head of Family', style: TextStyle(fontWeight: FontWeight.bold)),
-            Container(
-              decoration: BoxDecoration(border: Border.all(color: Colors.grey)),
-              child: Signature(controller: _signatureController, height: 150, backgroundColor: Colors.grey[200]!),
-            ),
-            TextButton(onPressed: () => _signatureController.clear(), child: const Text('Clear Signature')),
+            if (_signatureUrl != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Image.network(_signatureUrl!, height: 150, fit: BoxFit.contain),
+                  TextButton(onPressed: () => setState(() => _signatureUrl = null), child: const Text('Clear and Sign Again')),
+                ],
+              )
+            else
+              Column(
+                children: [
+                  Container(decoration: BoxDecoration(border: Border.all(color: Colors.grey)), child: Signature(controller: _signatureController, height: 150, backgroundColor: Colors.grey[200]!)),
+                  TextButton(onPressed: () => _signatureController.clear(), child: const Text('Clear Signature')),
+                ],
+              ),
           ]),
         ),
         isActive: _currentStep >= 4,
@@ -1381,7 +1419,12 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                 title: Text(i == 0 ? 'Head of Family' : 'Family Member ${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 children: [
                   _buildReviewRow('Name', _familyMembers[i].nameCtrl.text),
-                  _buildReviewRow('Relationship', _familyMembers[i].relationshipCtrl.text),
+                  if (_familyMembers[i].photoUrl != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Image.network(_familyMembers[i].photoUrl!, height: 100),
+                    ),
+                   _buildReviewRow('Relationship', _familyMembers[i].relationshipCtrl.text),
                   _buildReviewRow('Gender', _familyMembers[i].gender),
                   _buildReviewRow('Age', _familyMembers[i].ageCtrl.text),
                   _buildReviewRow('Marital Status', _familyMembers[i].maritalStatus),
@@ -1398,7 +1441,12 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildReviewRow('Ownership', _residenceOwnerTenant),
             _buildReviewRow('House Type', _residencePakkaKachha),
             _buildReviewRow('Toilet Facilities', _residenceToiletFacilities),
-            _buildReviewRow('Electricity', _residenceElectricity),
+            if (_housePhotoUrl != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Image.network(_housePhotoUrl!, height: 100),
+              ),
+             _buildReviewRow('Electricity', _residenceElectricity),
             _buildReviewRow('House Photo', _housePhotoUrl != null ? 'Captured' : 'Not Captured'),
             _buildReviewRow('Fuel Facility', _residenceFuelFacility),
 
@@ -1407,18 +1455,38 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildReviewRow('Holds Land?', _landHolds),
             if (_landHolds == 'Yes')
               _buildReviewRow('Land Records', _landRecords.isNotEmpty ? '${_landRecords.length} record(s)' : 'None'),
-            _buildReviewRow('Tree Records', _treeRecords.isNotEmpty ? '${_treeRecords.length} record(s)' : 'None'),
+            if (_treeRecords.isNotEmpty)
+              _buildReviewRow('Tree Records', '${_treeRecords.length} record(s)'),
+            for (var tree in _treeRecords)
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildReviewRow(tree.nameCtrl.text, 'Count: ${tree.countCtrl.text}'),
+                    if (tree.photoUrl != null) Image.network(tree.photoUrl!, height: 80),
+                  ],
+                ),
+              ),
 
             // Step 4 Review
             _buildReviewSectionTitle('4. Income & Other Assets'),
             _buildReviewRow('Total Annual Income', _estimatedAnnualIncomeCtrl.text),
             _buildReviewRow('Asset Records', _assetRecords.isNotEmpty ? '${_assetRecords.length} record(s)' : 'None'),
             for (var asset in _assetRecords)
-              Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildReviewRow(asset.nameCtrl.text, 'Count: ${asset.countCtrl.text}')),
+              Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    _buildReviewRow(asset.nameCtrl.text, 'Count: ${asset.countCtrl.text}'),
+                    if (asset.photoUrl != null) Image.network(asset.photoUrl!, height: 80),
+                  ])),
 
             _buildReviewRow('Livestock Records', _livestockRecords.isNotEmpty ? '${_livestockRecords.length} record(s)' : 'None'),
             for (var livestock in _livestockRecords)
-              Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildReviewRow(livestock.nameCtrl.text, 'Count: ${livestock.countCtrl.text}')),
+              Padding(padding: const EdgeInsets.only(left: 16.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _buildReviewRow(livestock.nameCtrl.text, 'Count: ${livestock.countCtrl.text}'),
+                if (livestock.photoUrl != null) Image.network(livestock.photoUrl!, height: 80),
+              ])),
 
 
             // Step 5 Review
@@ -1431,25 +1499,23 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                 child: _buildReviewRow('Loan Amount', _loanAmountCtrl.text),
               ),
             _buildReviewRow('GPS Location', _finalGpsLocation != null ? 'Captured' : 'Pending'),
-            _buildReviewRow('Signature', _signatureController.isNotEmpty ? 'Signed' : 'Not Signed'),
-            if (_signatureController.isNotEmpty)
+            _buildReviewRow('Signature', _signatureUrl != null || _signatureController.isNotEmpty ? 'Signed' : 'Not Signed'),
+            if (_signatureUrl != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Container(
-                  height: 50,
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey)),
-                  child: FutureBuilder<Uint8List?>(
-                    future: _signatureController.toPngBytes(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
-                        return Image.memory(
-                          snapshot.data!,
-                        );
-                      }
-                      // Show a placeholder or loading indicator while waiting
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                  ),
+                child: Image.network(_signatureUrl!, height: 50, fit: BoxFit.contain),
+              )
+            else if (_signatureController.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: FutureBuilder<Uint8List?>(
+                  future: _signatureController.toPngBytes(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
+                      return Image.memory(snapshot.data!, height: 50, fit: BoxFit.contain);
+                    }
+                    return const SizedBox(height: 50, child: Center(child: CircularProgressIndicator()));
+                  },
                 ),
               ),
           ],
