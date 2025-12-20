@@ -27,7 +27,7 @@ class FamilySurveyService {
       );
 
       if (response.statusCode == 201 && response.data != null) {
-        return response.data['file_name_url'] as String?;
+        return response.data['file_name'] as String?;
       }
     } on DioException catch (e) {
       print('Error uploading document: ${e.response?.data ?? e.message}');
