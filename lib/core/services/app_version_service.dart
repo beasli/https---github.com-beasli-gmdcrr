@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'dio_client.dart';
 
 class AppVersionService {
-  final Dio _dio = Dio();
+  // Use the centralized DioClient
+  final Dio _dio = DioClient.instance;
 
   Future<Map<String, dynamic>?> checkVersion() async {
     try {

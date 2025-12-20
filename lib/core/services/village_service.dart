@@ -257,4 +257,42 @@ class VillageService {
       return false;
     }
   }
+
+  /// Submits the village survey data.
+  Future<Map<String, dynamic>> submitSurvey(Map<String, dynamic> payload) async {
+    try {
+      final bearerToken = await _authService.getToken();
+      final headers = <String, dynamic>{
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      };
+      if (bearerToken != null && bearerToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $bearerToken';
+      }
+
+      final id = payload['id'] ?? payload['village']?['id'];
+      Response response;
+
+      if (id != null && id is int && id > 0) {
+        response = await _dio.put(
+          UrlBuilder.build('village-survey/$id'),
+          data: payload,
+          options: Options(headers: headers),
+        );
+      } else {
+        response = await _dio.post(
+          UrlBuilder.build('village-survey'),
+          data: payload,
+          options: Options(headers: headers),
+        );
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true, 'data': response.data};
+      }
+    } catch (e) {
+      print('Error submitting village survey: $e');
+    }
+    return {'success': false};
+  }
 }

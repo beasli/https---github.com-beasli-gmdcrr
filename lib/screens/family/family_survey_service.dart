@@ -2,13 +2,12 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import '../../core/config/api.dart';
-import '../../core/services/auth_service.dart';
+import '../../core/services/dio_client.dart';
 
 /// Service class for handling family survey related API calls.
 class FamilySurveyService {
-  final Dio _dio = Dio();
+  final Dio _dio = DioClient.instance;
   final String _baseUrl = kApiBaseUrl;
-  final AuthService _authService = AuthService();
 
   /// Uploads a single document/image file.
   ///
@@ -21,16 +20,10 @@ class FamilySurveyService {
     });
 
     try {
-      final bearerToken = await _authService.getToken();
-      final headers = <String, dynamic>{'accept': '*/*'};
-      if (bearerToken != null && bearerToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $bearerToken';
-      }
-
       final response = await _dio.post(
         '$_baseUrl/family-survey/upload-document',
         data: formData,
-        options: Options(headers: headers),
+        options: Options(headers: {'accept': '*/*'}),
       );
 
       if (response.statusCode == 201 && response.data != null) {
@@ -49,14 +42,10 @@ class FamilySurveyService {
   /// Returns true on success, false on failure.
   Future<Map<String, dynamic>> submitSurvey(Map<String, dynamic> surveyData, {int? familySurveyId}) async {
     try {
-      final bearerToken = await _authService.getToken();
       final headers = <String, dynamic>{
         'accept': '*/*',
         'Content-Type': 'application/json',
       };
-      if (bearerToken != null && bearerToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $bearerToken';
-      }
 
       Response response;
       if (familySurveyId != null) {
@@ -96,11 +85,7 @@ class FamilySurveyService {
   /// Fetches the details of a single family survey by its ID.
   Future<Map<String, dynamic>?> fetchSurveyById(int id) async {
     try {
-      final bearerToken = await _authService.getToken();
       final headers = <String, dynamic>{'accept': '*/*'};
-      if (bearerToken != null && bearerToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $bearerToken';
-      }
 
       final response = await _dio.get('$_baseUrl/family-survey/$id', options: Options(headers: headers));
 
@@ -119,11 +104,7 @@ class FamilySurveyService {
   /// Returns a list of survey data on success, or an empty list on failure.
   Future<List<dynamic>> fetchUserSurveysByVillage(int villageId) async {
     try {
-      final bearerToken = await _authService.getToken();
       final headers = <String, dynamic>{'accept': '*/*'};
-      if (bearerToken != null && bearerToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $bearerToken';
-      }
   
       final response = await _dio.get(
         '$_baseUrl/family-survey/user',

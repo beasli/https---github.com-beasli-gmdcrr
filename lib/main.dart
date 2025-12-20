@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'core/services/network_service.dart';
 import 'screens/splash/splash_screen.dart';
 import 'core/widgets/app_update_wrapper.dart';
+import 'core/services/auth_service.dart';
+import 'core/utils/globals.dart';
+import 'screens/auth/login_screen.dart';
 
 
 void main() {
@@ -20,15 +23,22 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final materialTheme = MaterialTheme(_textTheme);
 
-    return ChangeNotifierProvider(
-      create: (_) => NetworkService(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NetworkService()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
+      ],
       child: Builder(builder: (context) {
         return MaterialApp(
+          navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'GMDCRR',
           theme: materialTheme.light(),
           darkTheme: materialTheme.dark(),
           home: const SplashScreen(),
+          routes: {
+            '/login': (context) => const LoginScreen(),
+          },
           builder: (context, child) {
             // Show an offline banner when NetworkService reports offline.
             return AppUpdateWrapper(

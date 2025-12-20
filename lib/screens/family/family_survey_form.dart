@@ -216,7 +216,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     return null;
   }
 
-  Timer? _debounce;
   bool _isInitialDataLoaded = false;
   @override
   void initState() {
@@ -261,14 +260,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     _estimatedAnnualIncomeCtrl.text = total.toStringAsFixed(2);
   }
 
-  /// Debounces the local save operation to avoid excessive DB writes.
-  void _onFieldChanged() {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(seconds: 2), () {
-      _saveLocally();
-    });
-  }
-
   /// Gathers form data and saves it to the local SQLite database.
   Future<void> _saveLocally() async {
     // Don't save locally if we are still loading or processing.
@@ -294,7 +285,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     _familyNoCtrl.dispose();
     _villageNameCtrl.dispose();
     _laneCtrl.dispose();
-    _debounce?.cancel();
     _houseNoCtrl.dispose();
 
     // Dispose controllers for all family members
@@ -372,7 +362,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _addFamilyMember() {
     setState(() {
       _familyMembers.add(FamilyMember());
-      _onFieldChanged();
     });
   }
 
@@ -380,7 +369,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() {
       _disposeMemberControllers(_familyMembers[index]);
       _familyMembers.removeAt(index);
-      _onFieldChanged();
     });
   }
 
@@ -396,7 +384,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _addLandRecord() {
     setState(() {
       _landRecords.add(LandRecord());
-      _onFieldChanged();
     });
   }
 
@@ -404,7 +391,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() {
       _disposeLandRecordControllers(_landRecords[index]);
       _landRecords.removeAt(index);
-      _onFieldChanged();
     });
   }
 
@@ -416,7 +402,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _addAssetRecord() {
     setState(() {
       _assetRecords.add(AssetRecord());
-      _onFieldChanged();
     });
   }
 
@@ -424,7 +409,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() {
       _disposeAssetRecordControllers(_assetRecords[index]);
       _assetRecords.removeAt(index);
-      _onFieldChanged();
     });
   }
 
@@ -436,7 +420,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _addLivestockRecord() {
     setState(() {
       _livestockRecords.add(LivestockRecord());
-      _onFieldChanged();
     });
   }
 
@@ -449,7 +432,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _addTreeRecord() {
     setState(() {
       _treeRecords.add(TreeRecord());
-      _onFieldChanged();
     });
   }
 
@@ -457,7 +439,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() {
       _disposeTreeRecordControllers(_treeRecords[index]);
       _treeRecords.removeAt(index);
-      _onFieldChanged();
     });
   }
 
@@ -465,7 +446,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() {
       _disposeLivestockRecordControllers(_livestockRecords[index]);
       _livestockRecords.removeAt(index);
-      _onFieldChanged();
     });
   }
 
@@ -750,13 +730,47 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         }
       }
 
-      // TODO: Populate other steps (Income, Expenses, Loans) in a similar fashion.
-      // This part is left as an exercise but follows the same pattern as above.
-      // Example for income:
-      // final income = surveyRoot['income'] as Map<String, dynamic>?;
-      // if (income != null) {
-      //   _incomeFarmingCtrl.text = income['farming']?.toString() ?? '';
-      // }
+      // Populate Income
+      final income = surveyRoot['income'] as Map<String, dynamic>?;
+      if (income != null) {
+        _incomeFarmingCtrl.text = income['farming']?.toString() ?? '';
+        _incomeJobCtrl.text = income['job']?.toString() ?? '';
+        _incomeBusinessCtrl.text = income['business']?.toString() ?? '';
+        _incomeLaborCtrl.text = income['labor']?.toString() ?? '';
+        _incomeHouseworkCtrl.text = income['housework']?.toString() ?? '';
+        _incomeOtherCtrl.text = income['other_income']?.toString() ?? '';
+        _estimatedAnnualIncomeCtrl.text = income['estimated_annual_income']?.toString() ?? '';
+      }
+
+      // Populate Expenses
+      final expenses = surveyRoot['expense'] as Map<String, dynamic>?;
+      if (expenses != null) {
+        _expenseAgricultureCtrl.text = expenses['agriculture']?.toString() ?? '';
+        _expenseHouseCtrl.text = expenses['house']?.toString() ?? '';
+        _expenseFoodCtrl.text = expenses['food']?.toString() ?? '';
+        _expenseFuelCtrl.text = expenses['fuel']?.toString() ?? '';
+        _expenseElectricityCtrl.text = expenses['electricity']?.toString() ?? '';
+        _expenseClothsCtrl.text = expenses['clothes']?.toString() ?? '';
+        _expenseHealthCtrl.text = expenses['health']?.toString() ?? '';
+        _expenseEducationCtrl.text = expenses['education']?.toString() ?? '';
+        _expenseTransportationCtrl.text = expenses['transportation']?.toString() ?? '';
+        _expenseCommunicationCtrl.text = expenses['communication']?.toString() ?? '';
+        _expenseCinemaHotelCtrl.text = expenses['entertainment']?.toString() ?? '';
+        _expenseTaxesCtrl.text = expenses['taxes']?.toString() ?? '';
+        _expenseOthersCtrl.text = expenses['others']?.toString() ?? '';
+      }
+
+      // Populate Loan
+      final loan = surveyRoot['loan'] as Map<String, dynamic>?;
+      if (loan != null) {
+        _loanTaken = (loan['has_loan'] == true) ? 'Yes' : 'No';
+        if (_loanTaken == 'Yes') {
+          _loanAmountCtrl.text = loan['loan_amount']?.toString() ?? '';
+          _loanTenureYearsCtrl.text = loan['tenure_years']?.toString() ?? '';
+          _loanObtainedFromCtrl.text = loan['loan_source']?.toString() ?? '';
+          _loanPurposeCtrl.text = loan['loan_purpose']?.toString() ?? '';
+        }
+      }
     });
   }
 
@@ -784,6 +798,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     }
 
     if (isStepValid) {
+        _saveLocally();
         if (_currentStep < _getSteps().length - 1) {
             setState(() {
                 _currentStep++;
@@ -917,12 +932,43 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "livestock_photo": l.photoUrl,
         "cattle_paddy_type": l.cattlePaddyType,
       }).toList(),
-      // TODO: Add income, expense, and loan objects
+      "income": {
+        "farming": double.tryParse(_incomeFarmingCtrl.text) ?? 0,
+        "job": double.tryParse(_incomeJobCtrl.text) ?? 0,
+        "business": double.tryParse(_incomeBusinessCtrl.text) ?? 0,
+        "labor": double.tryParse(_incomeLaborCtrl.text) ?? 0,
+        "housework": double.tryParse(_incomeHouseworkCtrl.text) ?? 0,
+        "other_income": double.tryParse(_incomeOtherCtrl.text) ?? 0,
+        "estimated_annual_income": double.tryParse(_estimatedAnnualIncomeCtrl.text) ?? 0,
+      },
+      "expense": {
+        "agriculture": double.tryParse(_expenseAgricultureCtrl.text) ?? 0,
+        "house": double.tryParse(_expenseHouseCtrl.text) ?? 0,
+        "food": double.tryParse(_expenseFoodCtrl.text) ?? 0,
+        "fuel": double.tryParse(_expenseFuelCtrl.text) ?? 0,
+        "electricity": double.tryParse(_expenseElectricityCtrl.text) ?? 0,
+        "clothes": double.tryParse(_expenseClothsCtrl.text) ?? 0,
+        "health": double.tryParse(_expenseHealthCtrl.text) ?? 0,
+        "education": double.tryParse(_expenseEducationCtrl.text) ?? 0,
+        "transportation": double.tryParse(_expenseTransportationCtrl.text) ?? 0,
+        "communication": double.tryParse(_expenseCommunicationCtrl.text) ?? 0,
+        "entertainment": double.tryParse(_expenseCinemaHotelCtrl.text) ?? 0,
+        "taxes": double.tryParse(_expenseTaxesCtrl.text) ?? 0,
+        "others": double.tryParse(_expenseOthersCtrl.text) ?? 0,
+      },
+      "loan": {
+        "has_loan": _loanTaken == 'Yes',
+        "loan_amount": double.tryParse(_loanAmountCtrl.text) ?? 0,
+        "tenure_years": double.tryParse(_loanTenureYearsCtrl.text) ?? 0,
+        "loan_source": _loanObtainedFromCtrl.text,
+        "loan_purpose": _loanPurposeCtrl.text,
+      },
     };
     return payload;
   }
 
   Future<void> _handleSubmit() async {
+    await _saveLocally();
     setState(() => _isProcessing = true);
 
     final surveyData = await _gatherSurveyData('completed');
@@ -953,6 +999,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   }
 
   Future<void> _handleSaveDraft() async {
+    await _saveLocally();
     setState(() => _isProcessing = true);
 
     final surveyData = await _gatherSurveyData('draft');
@@ -1005,61 +1052,61 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
               ),
             ],
           ),
-        TextFormField(controller: member.nameCtrl, onChanged: (_) => _onFieldChanged(), decoration: InputDecoration(labelText: isHead ? 'Name of Head of Family' : 'Name'), validator: _validateRequired),
-        TextFormField(controller: member.relationshipCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Relationship with Head'), readOnly: isHead, validator: _validateRequired),
+        TextFormField(controller: member.nameCtrl, decoration: InputDecoration(labelText: isHead ? 'Name of Head of Family' : 'Name'), validator: _validateRequired),
+        TextFormField(controller: member.relationshipCtrl, decoration: const InputDecoration(labelText: 'Relationship with Head'), readOnly: isHead, validator: _validateRequired),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
             value: member.gender,
             decoration: const InputDecoration(labelText: 'Gender'),
             items: ['M', 'F'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-            onChanged: (val) => setState(() { member.gender = val; _onFieldChanged(); }),
+            onChanged: (val) => setState(() { member.gender = val; }),
             validator: (v) => v == null ? 'Required' : null,
           )),
           const SizedBox(width: 8),
-          Expanded(child: TextFormField(controller: member.ageCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired)),
+          Expanded(child: TextFormField(controller: member.ageCtrl, decoration: const InputDecoration(labelText: 'Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired)),
         ]),
         DropdownButtonFormField<String>(
           value: member.maritalStatus,
           decoration: const InputDecoration(labelText: 'Marital Status'),
           items: ['Married', 'Unmarried', 'Widow/Widower'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-          onChanged: (val) => setState(() { member.maritalStatus = val; _onFieldChanged(); }),
+          onChanged: (val) => setState(() { member.maritalStatus = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
-        TextFormField(controller: member.religionCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Religion'), validator: _validateRequired),
+        TextFormField(controller: member.religionCtrl, decoration: const InputDecoration(labelText: 'Religion'), validator: _validateRequired),
         DropdownButtonFormField<String>(
           value: member.caste,
           decoration: const InputDecoration(labelText: 'Caste'),
           items: ['General', 'OBC', 'SC', 'ST'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-          onChanged: (val) => setState(() { member.caste = val; _onFieldChanged(); }),
+          onChanged: (val) => setState(() { member.caste = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
         DropdownButtonFormField<String>(
           value: member.handicapped,
           decoration: const InputDecoration(labelText: 'Handicapped'),
           items: ['Yes', 'No'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-          onChanged: (val) => setState(() { member.handicapped = val; _onFieldChanged(); }),
+          onChanged: (val) => setState(() { member.handicapped = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
         const SizedBox(height: 16),
         if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleLarge),
-        TextFormField(controller: member.aadharCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: _validateAadhar),
-        TextFormField(controller: member.mobileCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: _validateMobile),
-        if (isHead) TextFormField(controller: member.bplCardCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'BPL Card No.')),
-        TextFormField(controller: member.educationCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Education Qualification'), validator: _validateRequired),
+        TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: _validateAadhar),
+        TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: _validateMobile),
+        if (isHead) TextFormField(controller: member.bplCardCtrl, decoration: const InputDecoration(labelText: 'BPL Card No.')),
+        TextFormField(controller: member.educationCtrl, decoration: const InputDecoration(labelText: 'Education Qualification'), validator: _validateRequired),
         DropdownButtonFormField<String>(
           value: member.studying,
           decoration: const InputDecoration(labelText: 'Studying in progress?'),
           items: ['Yes', 'No'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-          onChanged: (val) => setState(() { member.studying = val; _onFieldChanged(); }),
+          onChanged: (val) => setState(() { member.studying = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
-        TextFormField(controller: member.artisanSkillCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Artisan/Skill Details')),
+        TextFormField(controller: member.artisanSkillCtrl, decoration: const InputDecoration(labelText: 'Artisan/Skill Details')),
         DropdownButtonFormField<String>(
           value: member.skillTrainingInterest,
           decoration: const InputDecoration(labelText: 'Interested in Skill Training?'),
           items: ['Yes', 'No'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
           // TODO: This should probably be a boolean in the model
-          onChanged: (val) => setState(() { member.skillTrainingInterest = val; _onFieldChanged(); }),
+          onChanged: (val) => setState(() { member.skillTrainingInterest = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
         if (!isHead) const Divider(height: 32, thickness: 1),
@@ -1083,9 +1130,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
           ],
         ),
-        TextFormField(controller: tree.nameCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Name of Tree'), validator: _validateRequired),
-        TextFormField(controller: tree.countCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Number of trees'), keyboardType: TextInputType.number, validator: _validateRequired),
-        TextFormField(controller: tree.ageCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'How old is the tree? (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        TextFormField(controller: tree.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Tree'), validator: _validateRequired),
+        TextFormField(controller: tree.countCtrl, decoration: const InputDecoration(labelText: 'Number of trees'), keyboardType: TextInputType.number, validator: _validateRequired),
+        TextFormField(controller: tree.ageCtrl, decoration: const InputDecoration(labelText: 'How old is the tree? (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.camera_alt),
@@ -1114,16 +1161,16 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
           ],
         ),
-        TextFormField(controller: land.khataNoCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Khata No.'), validator: _validateRequired),
-        _buildDropdown('Land Type', land.landType, ['Agricultural', 'Commercial', 'Residential'], (val) => setState(() { land.landType = val; _onFieldChanged(); })),
-        TextFormField(controller: land.totalAreaCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Total Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
-        TextFormField(controller: land.acquiredAreaCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Acquired Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
-        TextFormField(controller: land.remainingAreaCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Remaining Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
-        _buildDropdown('Has Documentary Evidence?', land.hasDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { land.hasDocumentaryEvidence = val; _onFieldChanged(); })),
-        _buildDropdown('Is Land Mortgaged?', land.isLandMortgaged, ['Yes', 'No'], (val) => setState(() { land.isLandMortgaged = val; _onFieldChanged(); })),
+        TextFormField(controller: land.khataNoCtrl, decoration: const InputDecoration(labelText: 'Khata No.'), validator: _validateRequired),
+        _buildDropdown('Land Type', land.landType, ['Agricultural', 'Commercial', 'Residential'], (val) => setState(() { land.landType = val; })),
+        TextFormField(controller: land.totalAreaCtrl, decoration: const InputDecoration(labelText: 'Total Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        TextFormField(controller: land.acquiredAreaCtrl, decoration: const InputDecoration(labelText: 'Acquired Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        TextFormField(controller: land.remainingAreaCtrl, decoration: const InputDecoration(labelText: 'Remaining Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        _buildDropdown('Has Documentary Evidence?', land.hasDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { land.hasDocumentaryEvidence = val; })),
+        _buildDropdown('Is Land Mortgaged?', land.isLandMortgaged, ['Yes', 'No'], (val) => setState(() { land.isLandMortgaged = val; })),
         if (land.isLandMortgaged == 'Yes') ...[
-          TextFormField(controller: land.landMortgagedToCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Land Mortgaged To'), validator: _validateRequired),
-          TextFormField(controller: land.landMortgagedDetailsCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Mortgage Details'), validator: _validateRequired),
+          TextFormField(controller: land.landMortgagedToCtrl, decoration: const InputDecoration(labelText: 'Land Mortgaged To'), validator: _validateRequired),
+          TextFormField(controller: land.landMortgagedDetailsCtrl, decoration: const InputDecoration(labelText: 'Mortgage Details'), validator: _validateRequired),
         ],
         const Divider(height: 32, thickness: 1),
       ],
@@ -1146,8 +1193,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
           ],
         ),
-        TextFormField(controller: asset.nameCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Name of Asset (e.g., Tractor, TV)'), validator: _validateRequired),
-        TextFormField(controller: asset.countCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
+        TextFormField(controller: asset.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Asset (e.g., Tractor, TV)'), validator: _validateRequired),
+        TextFormField(controller: asset.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.camera_alt),
@@ -1172,9 +1219,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             TextButton.icon(icon: const Icon(Icons.delete_outline, color: Colors.red), label: const Text('Remove', style: TextStyle(color: Colors.red)), onPressed: () => _removeLivestockRecord(index)),
           ],
         ),
-        TextFormField(controller: livestock.nameCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Name of Livestock (e.g., Cow, Goat)'), validator: _validateRequired),
-        TextFormField(controller: livestock.countCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
-        _buildDropdown('Cattle Paddy Type', livestock.cattlePaddyType, ['Raw', 'Ripe', 'N/A'], (val) => setState(() { livestock.cattlePaddyType = val; _onFieldChanged(); })),
+        TextFormField(controller: livestock.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Livestock (e.g., Cow, Goat)'), validator: _validateRequired),
+        TextFormField(controller: livestock.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
+        _buildDropdown('Cattle Paddy Type', livestock.cattlePaddyType, ['Raw', 'Ripe', 'N/A'], (val) => setState(() { livestock.cattlePaddyType = val; })),
         ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.camera_alt),
@@ -1218,9 +1265,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Head of Family Details', style: Theme.of(context).textTheme.titleLarge),
             TextFormField(controller: _familyNoCtrl, decoration: const InputDecoration(labelText: 'Family No.'), readOnly: true),
-            TextFormField(controller: _villageNameCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Village Name'), readOnly: true, validator: _validateRequired),
-            TextFormField(controller: _laneCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Name of the Lane'), validator: _validateRequired),
-            TextFormField(controller: _houseNoCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'House No.'), validator: _validateRequired),
+            TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village Name'), readOnly: true, validator: _validateRequired),
+            TextFormField(controller: _laneCtrl, decoration: const InputDecoration(labelText: 'Name of the Lane'), validator: _validateRequired),
+            TextFormField(controller: _houseNoCtrl, decoration: const InputDecoration(labelText: 'House No.'), validator: _validateRequired),
             const SizedBox(height: 16),
             _buildMemberForm(_familyMembers[0], 0), // Form for the Head of Family
             const SizedBox(height: 16),
@@ -1246,31 +1293,31 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step2Key,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Residence Details - Part 1', style: Theme.of(context).textTheme.titleLarge),
-            TextFormField(controller: _residenceAgeCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Residence Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
-            _buildDropdown('Is residence authorized?', _residenceAuthorized, ['Yes', 'No'], (val) => setState(() { _residenceAuthorized = val; _onFieldChanged(); })),
-            _buildDropdown('Owner or Tenant', _residenceOwnerTenant, ['Owner', 'Tenant'], (val) => setState(() { _residenceOwnerTenant = val; _onFieldChanged(); })),
-            TextFormField(controller: _residenceTotalRoomsCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Total No. of rooms'), keyboardType: TextInputType.number, validator: _validateRequired),
-            _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() { _residencePakkaKachha = val; _onFieldChanged(); })),
-            _buildDropdown('Type of Roof', _residenceRoofType, ['RCC', 'Sheets', 'Tubes'], (val) => setState(() { _residenceRoofType = val; _onFieldChanged(); })),
-            TextFormField(controller: _residencePlotAreaCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Land/Plot Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            TextFormField(controller: _residenceConstructionAreaCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Total Construction Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            _buildDropdown('Interested in R&R Colony?', _residenceRrColonyInterest, ['Yes', 'No'], (val) => setState(() { _residenceRrColonyInterest = val; _onFieldChanged(); })),
-            _buildDropdown('Interested in living independently?', _residenceLiveOwnLifeInterest, ['Yes', 'No'], (val) => setState(() { _residenceLiveOwnLifeInterest = val; _onFieldChanged(); })),
+            TextFormField(controller: _residenceAgeCtrl, decoration: const InputDecoration(labelText: 'Residence Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
+            _buildDropdown('Is residence authorized?', _residenceAuthorized, ['Yes', 'No'], (val) => setState(() { _residenceAuthorized = val; })),
+            _buildDropdown('Owner or Tenant', _residenceOwnerTenant, ['Owner', 'Tenant'], (val) => setState(() { _residenceOwnerTenant = val; })),
+            TextFormField(controller: _residenceTotalRoomsCtrl, decoration: const InputDecoration(labelText: 'Total No. of rooms'), keyboardType: TextInputType.number, validator: _validateRequired),
+            _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() { _residencePakkaKachha = val; })),
+            _buildDropdown('Type of Roof', _residenceRoofType, ['RCC', 'Sheets', 'Tubes'], (val) => setState(() { _residenceRoofType = val; })),
+            TextFormField(controller: _residencePlotAreaCtrl, decoration: const InputDecoration(labelText: 'Land/Plot Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            TextFormField(controller: _residenceConstructionAreaCtrl, decoration: const InputDecoration(labelText: 'Total Construction Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            _buildDropdown('Interested in R&R Colony?', _residenceRrColonyInterest, ['Yes', 'No'], (val) => setState(() { _residenceRrColonyInterest = val; })),
+            _buildDropdown('Interested in living independently?', _residenceLiveOwnLifeInterest, ['Yes', 'No'], (val) => setState(() { _residenceLiveOwnLifeInterest = val; })),
             const Divider(height: 32),
 
             Text('Residence Amenities', style: Theme.of(context).textTheme.titleLarge),
-            _buildDropdown('Well/Borewell', _residenceWellBorewell, ['Yes', 'No'], (val) => setState(() { _residenceWellBorewell = val; _onFieldChanged(); })),
-            _buildDropdown('Toilet facilities', _residenceToiletFacilities, ['Yes', 'No'], (val) => setState(() { _residenceToiletFacilities = val; _onFieldChanged(); })),
-            _buildDropdown('Cesspool', _residenceCesspool, ['Yes', 'No'], (val) => setState(() { _residenceCesspool = val; _onFieldChanged(); })),
-            _buildDropdown('Drainage Facility', _residenceDrainageFacility, ['Underground', 'Open', 'None'], (val) => setState(() { _residenceDrainageFacility = val; _onFieldChanged(); })),
-            _buildDropdown('Water Tap Facility', _residenceWaterTap, ['Yes', 'No'], (val) => setState(() { _residenceWaterTap = val; _onFieldChanged(); })),
-            _buildDropdown('Electricity facility', _residenceElectricity, ['Yes', 'No'], (val) => setState(() { _residenceElectricity = val; _onFieldChanged(); })),
-            _buildDropdown('Fuel Facility', _residenceFuelFacility, ['Wood', 'Coal', 'Kerosene', 'Gas'], (val) => setState(() { _residenceFuelFacility = val; _onFieldChanged(); })),
-            _buildDropdown('Solar Energy Facility', _residenceSolarEnergy, ['Yes', 'No'], (val) => setState(() { _residenceSolarEnergy = val; _onFieldChanged(); })),
+            _buildDropdown('Well/Borewell', _residenceWellBorewell, ['Yes', 'No'], (val) => setState(() { _residenceWellBorewell = val; })),
+            _buildDropdown('Toilet facilities', _residenceToiletFacilities, ['Yes', 'No'], (val) => setState(() { _residenceToiletFacilities = val; })),
+            _buildDropdown('Cesspool', _residenceCesspool, ['Yes', 'No'], (val) => setState(() { _residenceCesspool = val; })),
+            _buildDropdown('Drainage Facility', _residenceDrainageFacility, ['Underground', 'Open', 'None'], (val) => setState(() { _residenceDrainageFacility = val; })),
+            _buildDropdown('Water Tap Facility', _residenceWaterTap, ['Yes', 'No'], (val) => setState(() { _residenceWaterTap = val; })),
+            _buildDropdown('Electricity facility', _residenceElectricity, ['Yes', 'No'], (val) => setState(() { _residenceElectricity = val; })),
+            _buildDropdown('Fuel Facility', _residenceFuelFacility, ['Wood', 'Coal', 'Kerosene', 'Gas'], (val) => setState(() { _residenceFuelFacility = val; })),
+            _buildDropdown('Solar Energy Facility', _residenceSolarEnergy, ['Yes', 'No'], (val) => setState(() { _residenceSolarEnergy = val; })),
             const Divider(height: 32),
 
             Text('Residence Document Capture', style: Theme.of(context).textTheme.titleLarge),
-            _buildDropdown('Is there documentary evidence?', _residenceDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { _residenceDocumentaryEvidence = val; _onFieldChanged(); })),
+            _buildDropdown('Is there documentary evidence?', _residenceDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { _residenceDocumentaryEvidence = val; })),
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: Text(_housePhotoUrl != null ? 'Photo Captured' : 'Capture House/Document Photo'),
@@ -1288,7 +1335,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step3Key,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Land Ownership Details', style: Theme.of(context).textTheme.titleLarge),
-            _buildDropdown('Does the family hold any land?', _landHolds, ['Yes', 'No'], (val) => setState(() { _landHolds = val; _onFieldChanged(); })),
+            _buildDropdown('Does the family hold any land?', _landHolds, ['Yes', 'No'], (val) => setState(() { _landHolds = val; })),
             if (_landHolds == 'Yes') ...[
               const SizedBox(height: 16),
               if (_landRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No land records added.'))),
@@ -1312,13 +1359,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step4Key, 
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Annual Income Sources', style: Theme.of(context).textTheme.titleLarge),
-            TextFormField(controller: _incomeFarmingCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Farming'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            TextFormField(controller: _incomeJobCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Job (Govt/Semi-Govt/Other)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            TextFormField(controller: _incomeBusinessCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Business'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            TextFormField(controller: _incomeLaborCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Labor (Agricultural/Other)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            TextFormField(controller: _incomeHouseworkCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Housework'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            TextFormField(controller: _incomeOtherCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Other income'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
-            TextFormField(controller: _estimatedAnnualIncomeCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Total Estimated Annual Income'), readOnly: true, validator: _validateRequired),
+            TextFormField(controller: _incomeFarmingCtrl, decoration: const InputDecoration(labelText: 'Farming'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            TextFormField(controller: _incomeJobCtrl, decoration: const InputDecoration(labelText: 'Job (Govt/Semi-Govt/Other)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            TextFormField(controller: _incomeBusinessCtrl, decoration: const InputDecoration(labelText: 'Business'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            TextFormField(controller: _incomeLaborCtrl, decoration: const InputDecoration(labelText: 'Labor (Agricultural/Other)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            TextFormField(controller: _incomeHouseworkCtrl, decoration: const InputDecoration(labelText: 'Housework'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            TextFormField(controller: _incomeOtherCtrl, decoration: const InputDecoration(labelText: 'Other income'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            TextFormField(controller: _estimatedAnnualIncomeCtrl, decoration: const InputDecoration(labelText: 'Total Estimated Annual Income'), readOnly: true, validator: _validateRequired),
             const Divider(height: 32),
 
             Text('Other Assets', style: Theme.of(context).textTheme.titleLarge),
@@ -1343,28 +1390,28 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step5Key,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Annual Expenses', style: Theme.of(context).textTheme.titleLarge),
-            TextFormField(controller: _expenseAgricultureCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Agriculture'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseHouseCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'House'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseFoodCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Food'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseFuelCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Fuel'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseElectricityCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Electricity'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseClothsCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Cloths'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseHealthCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Health'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseEducationCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Education'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseTransportationCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Transportation'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseCommunicationCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Communication'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseCinemaHotelCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Cinema/Hotel'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseTaxesCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Taxes'), keyboardType: TextInputType.number, validator: _validateRequired),
-            TextFormField(controller: _expenseOthersCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Others'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseAgricultureCtrl, decoration: const InputDecoration(labelText: 'Agriculture'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseHouseCtrl, decoration: const InputDecoration(labelText: 'House'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseFoodCtrl, decoration: const InputDecoration(labelText: 'Food'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseFuelCtrl, decoration: const InputDecoration(labelText: 'Fuel'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseElectricityCtrl, decoration: const InputDecoration(labelText: 'Electricity'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseClothsCtrl, decoration: const InputDecoration(labelText: 'Cloths'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseHealthCtrl, decoration: const InputDecoration(labelText: 'Health'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseEducationCtrl, decoration: const InputDecoration(labelText: 'Education'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseTransportationCtrl, decoration: const InputDecoration(labelText: 'Transportation'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseCommunicationCtrl, decoration: const InputDecoration(labelText: 'Communication'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseCinemaHotelCtrl, decoration: const InputDecoration(labelText: 'Cinema/Hotel'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseTaxesCtrl, decoration: const InputDecoration(labelText: 'Taxes'), keyboardType: TextInputType.number, validator: _validateRequired),
+            TextFormField(controller: _expenseOthersCtrl, decoration: const InputDecoration(labelText: 'Others'), keyboardType: TextInputType.number, validator: _validateRequired),
             const Divider(height: 32),
 
             Text('Loans and Debts', style: Theme.of(context).textTheme.titleLarge),
-            _buildDropdown('Have taken any loan?', _loanTaken, ['Yes', 'No'], (val) => setState(() { _loanTaken = val; _onFieldChanged(); })),
+            _buildDropdown('Have taken any loan?', _loanTaken, ['Yes', 'No'], (val) => setState(() { _loanTaken = val; })),
             if (_loanTaken == 'Yes') ...[
-              TextFormField(controller: _loanAmountCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Loan Amount (Rs.)'), keyboardType: TextInputType.number, validator: _validateRequired),
-              TextFormField(controller: _loanTenureYearsCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Loan Tenure (Years)'), keyboardType: TextInputType.number, validator: _validateRequired),
-              TextFormField(controller: _loanObtainedFromCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Where is the loan obtained from?'), validator: _validateRequired),
-              TextFormField(controller: _loanPurposeCtrl, onChanged: (_) => _onFieldChanged(), decoration: const InputDecoration(labelText: 'Purpose of getting loan'), validator: _validateRequired),
+              TextFormField(controller: _loanAmountCtrl, decoration: const InputDecoration(labelText: 'Loan Amount (Rs.)'), keyboardType: TextInputType.number, validator: _validateRequired),
+              TextFormField(controller: _loanTenureYearsCtrl, decoration: const InputDecoration(labelText: 'Loan Tenure (Years)'), keyboardType: TextInputType.number, validator: _validateRequired),
+              TextFormField(controller: _loanObtainedFromCtrl, decoration: const InputDecoration(labelText: 'Where is the loan obtained from?'), validator: _validateRequired),
+              TextFormField(controller: _loanPurposeCtrl, decoration: const InputDecoration(labelText: 'Purpose of getting loan'), validator: _validateRequired),
             ],
             const Divider(height: 32),
 

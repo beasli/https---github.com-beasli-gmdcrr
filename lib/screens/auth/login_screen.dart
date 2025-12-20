@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
+import 'package:provider/provider.dart';
 import '../../core/config/env.dart';
 import '../../core/services/auth_service.dart';
 import '../home/home_page.dart';
@@ -39,17 +40,17 @@ class _LoginScreenState extends State<LoginScreen> {
   });
 
   // Authenticate via API
-  final authService = AuthService();
-  final token = await authService.login(_usernameCtrl.text, _passwordCtrl.text);
-  developer.log('Login token: $token', name: 'auth');
-  if (token == 'true') {
-    // Save token, navigate to Home
-    // For now, in-memory - later use shared_preferences
+  // Use the provider instance instead of creating a new one
+  final authService = Provider.of<AuthService>(context, listen: false);
+  final error = await authService.login(_usernameCtrl.text, _passwordCtrl.text);
+  
+  if (error == null) {
+    // Success
     if (!mounted) return;
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
   } else {
     setState(() {
-      _errorMessage = token;
+      _errorMessage = error;
       _loading = false;
     });
   }
