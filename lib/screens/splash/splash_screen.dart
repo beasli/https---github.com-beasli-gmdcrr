@@ -28,6 +28,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _ensureLocationPermission() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) _showLocationServiceDialog();
+      return;
+    }
+
     final permission = await LocationService.requestPermission();
 
     if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
@@ -35,6 +41,23 @@ class _SplashScreenState extends State<SplashScreen> {
     } else {
       if (mounted) _showPermissionDialog(permission);
     }
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Location Services Disabled'),
+        content: const Text('Please enable location services (GPS) to continue.'),
+        actions: [
+          TextButton(onPressed: () => Geolocator.openLocationSettings(), child: const Text('Settings')),
+          TextButton(
+              onPressed: () { Navigator.pop(ctx); _ensureLocationPermission(); },
+              child: const Text('Retry')),
+        ],
+      ),
+    );
   }
 
   void _showPermissionDialog(LocationPermission status) {
