@@ -205,6 +205,32 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     {'label': 'Other', 'value': 'Other'},
   ];
 
+  final List<String> _relationshipOptions = [
+    'Spouse',
+    'Son',
+    'Daughter',
+    'Father',
+    'Mother',
+    'Brother',
+    'Sister',
+    'Grandparent',
+    'In-law',
+    'Other Relative',
+    'Non-relative'
+  ];
+
+  final List<String> _religionOptions = [
+    'Hindu',
+    'Muslim',
+    'Christian',
+    'Sikh',
+    'Buddhist',
+    'Jain',
+    'Jewish',
+    'Parsi',
+    'Other'
+  ];
+
   // A helper function for simple validation
   String? _validateRequired(String? value) {
     if (value == null || value.isEmpty) {
@@ -650,7 +676,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           }
           member.ageCtrl.text = memberData['age']?.toString() ?? '';
           member.maritalStatus = memberData['marital_status']?.toString();
-          member.religion = memberData['religion']?.toString();
+          member.religion = memberData['religion']?.toString().trim();
           member.caste = memberData['caste_category']?.toString();
           member.handicapped = (memberData['is_handicapped'] == true) ? 'Yes' : 'No';
           member.aadharCtrl.text = memberData['aadhar_no']?.toString() ?? '';
@@ -1085,9 +1111,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           )
         else
           DropdownButtonFormField<String>(
-            value: member.relationship,
+            value: _relationshipOptions.contains(member.relationship) ? member.relationship : null,
             decoration: const InputDecoration(labelText: 'Relationship with Head'),
-            items: ['Spouse', 'Son', 'Daughter', 'Father', 'Mother', 'Brother', 'Sister', 'Grandparent', 'In-law', 'Other Relative', 'Non-relative']
+            items: _relationshipOptions
                 .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
             onChanged: (val) => setState(() {
               member.relationship = val;
@@ -1118,9 +1144,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           validator: (v) => v == null ? 'Required' : null,
         ),
         DropdownButtonFormField<String>(
-          value: member.religion,
+          value: _religionOptions.contains(member.religion) ? member.religion : null,
           decoration: const InputDecoration(labelText: 'Religion'),
-          items: ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Jain', 'Jewish', 'Parsi', 'Other']
+          items: _religionOptions
               .map((v) => DropdownMenuItem(value: v, child: Text(v)))
               .toList(),
           onChanged: (val) => setState(() { member.religion = val; }),
