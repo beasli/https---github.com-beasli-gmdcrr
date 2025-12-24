@@ -213,23 +213,27 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     return null;
   }
 
-  String? _validateAadhar(String? value) {
-    String? required = _validateRequired(value);
-    if (required != null) {
-      return required;
+  String? _validateAadhar(String? value, {bool isMandatory = true}) {
+    if (isMandatory) {
+      String? required = _validateRequired(value);
+      if (required != null) {
+        return required;
+      }
     }
-    if (value!.length != 12) {
+    if (value != null && value.isNotEmpty && value.length != 12) {
       return 'Aadhar must be 12 digits';
     }
     return null;
   }
 
-  String? _validateMobile(String? value) {
-    String? required = _validateRequired(value);
-    if (required != null) {
-      return required;
+  String? _validateMobile(String? value, {bool isMandatory = true}) {
+    if (isMandatory) {
+      String? required = _validateRequired(value);
+      if (required != null) {
+        return required;
+      }
     }
-    if (value!.length != 10) {
+    if (value != null && value.isNotEmpty && value.length != 10) {
       return 'Mobile must be 10 digits';
     }
     return null;
@@ -1127,8 +1131,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ),
         const SizedBox(height: 16),
         if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleLarge),
-        TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: _validateAadhar),
-        TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: _validateMobile),
+        TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
+        TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: (v) => _validateMobile(v, isMandatory: isHead)),
         if (isHead) TextFormField(controller: member.bplCardCtrl, decoration: const InputDecoration(labelText: 'BPL Card No.')),
         DropdownButtonFormField<String>(
           isExpanded: true,
