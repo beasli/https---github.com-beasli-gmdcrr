@@ -782,8 +782,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _incomeFarmingCtrl.text = income['farming']?.toString() ?? '';
         _incomeJobCtrl.text = income['job']?.toString() ?? '';
         _incomeBusinessCtrl.text = income['business']?.toString() ?? '';
-        _incomeLaborCtrl.text = income['labor']?.toString() ?? '';
-        _incomeHouseworkCtrl.text = income['housework']?.toString() ?? '';
+        _incomeLaborCtrl.text = income['labour']?.toString() ?? income['labor']?.toString() ?? '';
+        _incomeHouseworkCtrl.text = income['house_work']?.toString() ?? income['housework']?.toString() ?? '';
         _incomeOtherCtrl.text = income['other_income']?.toString() ?? '';
         _estimatedAnnualIncomeCtrl.text = income['estimated_annual_income']?.toString() ?? '';
       }
@@ -986,8 +986,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "farming": double.tryParse(_incomeFarmingCtrl.text) ?? 0,
         "job": double.tryParse(_incomeJobCtrl.text) ?? 0,
         "business": double.tryParse(_incomeBusinessCtrl.text) ?? 0,
-        "labor": double.tryParse(_incomeLaborCtrl.text) ?? 0,
-        "housework": double.tryParse(_incomeHouseworkCtrl.text) ?? 0,
+        "labour": double.tryParse(_incomeLaborCtrl.text) ?? 0,
+        "house_work": double.tryParse(_incomeHouseworkCtrl.text) ?? 0,
         "other_income": double.tryParse(_incomeOtherCtrl.text) ?? 0,
         "estimated_annual_income": double.tryParse(_estimatedAnnualIncomeCtrl.text) ?? 0,
       },
