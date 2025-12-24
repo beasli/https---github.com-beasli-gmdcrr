@@ -826,6 +826,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         } else {
             // This case is now handled by the bottom navigation bar's submit button directly.
         }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields correctly.'), backgroundColor: Colors.red),
+      );
     }
   }
   void _onStepCancel() {
