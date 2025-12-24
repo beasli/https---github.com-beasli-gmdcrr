@@ -23,7 +23,7 @@ class FamilyMember {
   String? studying;
   TextEditingController educationCtrl = TextEditingController();
   String? maritalStatus;
-  TextEditingController religionCtrl = TextEditingController();
+  String? religion;
   TextEditingController bplCardCtrl = TextEditingController();
   TextEditingController aadharCtrl = TextEditingController();
   TextEditingController mobileCtrl = TextEditingController();
@@ -351,7 +351,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     member.relationshipCtrl.dispose();
     member.ageCtrl.dispose();
     member.educationCtrl.dispose();
-    member.religionCtrl.dispose();
     member.bplCardCtrl.dispose();
     member.aadharCtrl.dispose();
     member.mobileCtrl.dispose();
@@ -630,7 +629,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           }
           member.ageCtrl.text = memberData['age']?.toString() ?? '';
           member.maritalStatus = memberData['marital_status']?.toString();
-          member.religionCtrl.text = memberData['religion']?.toString() ?? '';
+          member.religion = memberData['religion']?.toString();
           member.caste = memberData['caste_category']?.toString();
           member.handicapped = (memberData['is_handicapped'] == true) ? 'Yes' : 'No';
           member.aadharCtrl.text = memberData['aadhar_no']?.toString() ?? '';
@@ -869,7 +868,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "gender": (m.gender == 'M') ? 'Male' : (m.gender == 'F' ? 'Female' : null),
         "age": int.tryParse(m.ageCtrl.text) ?? 0,
         "marital_status": m.maritalStatus,
-        "religion": m.religionCtrl.text, // This was missing from the model
+        "religion": m.religion,
         "caste_category": m.caste,
         "handicapped": m.handicapped == 'Yes',
         "aadhar_no": m.aadharCtrl.text,
@@ -1072,7 +1071,15 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           onChanged: (val) => setState(() { member.maritalStatus = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
-        TextFormField(controller: member.religionCtrl, decoration: const InputDecoration(labelText: 'Religion'), validator: _validateRequired),
+        DropdownButtonFormField<String>(
+          value: member.religion,
+          decoration: const InputDecoration(labelText: 'Religion'),
+          items: ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Jain', 'Jewish', 'Parsi', 'Other']
+              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+              .toList(),
+          onChanged: (val) => setState(() { member.religion = val; }),
+          validator: _validateRequired,
+        ),
         DropdownButtonFormField<String>(
           value: member.caste,
           decoration: const InputDecoration(labelText: 'Caste'),
