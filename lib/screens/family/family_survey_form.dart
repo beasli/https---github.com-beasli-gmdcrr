@@ -3,10 +3,12 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:typed_data';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import './family_survey_service.dart';
 import '../village/camera_capture.dart';
 import '../../core/services/village_service.dart';
 import '../../core/config/api.dart';
+import '../../core/services/location_service.dart';
 import '../../core/services/local_db.dart';
 import 'package:signature/signature.dart';
 import '../../core/config/env.dart';
@@ -185,6 +187,30 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     penColor: Colors.black,
     exportBackgroundColor: Colors.white,
   );
+
+  final Map<String, String> _localToRemoteMap = {};
+
+  Future<String?> _resolveImageUrl(String? url, {bool forLocalSave = false}) async {
+    if (url == null || url.isEmpty) return null;
+    if (forLocalSave) return url;
+    if (url.startsWith('http')) return url;
+    if (_localToRemoteMap.containsKey(url)) return _localToRemoteMap[url];
+
+    final file = File(url);
+    if (await file.exists()) {
+      try {
+        final bytes = await file.readAsBytes();
+        final remote = await _surveyService.uploadDocument(bytes, url);
+        if (remote != null) {
+          _localToRemoteMap[url] = remote;
+          return remote;
+        }
+      } catch (e) {
+        debugPrint('Error uploading image: $e');
+      }
+    }
+    return null;
+  }
 
   final List<Map<String, String>> _educationOptions = [
     {'label': 'Illiterate', 'value': 'Illiterate'},
@@ -497,7 +523,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
 
   /// Generic photo capture and upload logic.
   /// [onUploadComplete] is a callback that receives the remote URL.
-  Future<void> _captureAndUploadPhoto(Function(String) onUploadComplete) async {
+  Future<void> _captureAndUploadPhoto(Function(String) onImageCaptured) async {
     if (_isUploading) return;
 
     // Navigate to the custom camera capture page
@@ -508,14 +534,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     // User may have cancelled
     if (result == null || result['path'] == null || result['bytes'] == null) return;
 
-    final String photoPath = result['path']+'.jpg';
+    
+    String photoPath = result['path'];
+
     final Uint8List photoBytes = result['bytes'];
+
+    // Update UI immediately with local path
+    onImageCaptured(photoPath);
 
     setState(() => _isUploading = true);
 
     // Show a snackbar to indicate upload is in progress
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Uploading photo...'), duration: Duration(minutes: 2)), // Long duration
+      const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 1)),
     );
 
     final remoteUrl = await _surveyService.uploadDocument(photoBytes, photoPath);
@@ -526,7 +557,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() => _isUploading = false);
 
     if (remoteUrl != null) {
-      onUploadComplete(remoteUrl);
+      _localToRemoteMap[photoPath] = remoteUrl;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Photo uploaded successfully!'), backgroundColor: Colors.green),
       );
@@ -547,32 +578,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       lat = 21.6701;
       lon = 72.2319;
     } else {
-      bool serviceEnabled;
-      LocationPermission permission;
-
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location services are disabled.')));
+      final position = await LocationService.getPositionWithFallback();
+      if (position == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to get location. Please ensure GPS is enabled.')));
         return;
       }
-
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are denied.')));
-          return;
-        }
-      }
-
-      try {
-        final position = await Geolocator.getCurrentPosition();
-        lat = position.latitude;
-        lon = position.longitude;
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to get location.')));
-        return;
-      }
+      lat = position.latitude;
+      lon = position.longitude;
     }
 
     setState(() {
@@ -912,7 +924,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "lane": _laneCtrl.text,
         "house_no": _houseNoCtrl.text,
       },
-      "members": _familyMembers.map((m) => {
+      "members": await Future.wait(_familyMembers.map((m) async => {
         "name": m.nameCtrl.text,
         "relationship_with_head": m.relationship,
         // Map form value ('M'/'F') to API gender ('Male'/'Female')
@@ -928,9 +940,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "studying_in_progress": m.studying == 'Yes',
         "artisan_details": m.artisanSkillCtrl.text,
         "interested_in_training": m.skillTrainingInterest == 'Yes',
-        "photo_url": m.photoUrl,
+        "photo_url": await _resolveImageUrl(m.photoUrl, forLocalSave: forLocalSave),
         "bpl_card_no": m.bplCardCtrl.text,
-      }).toList(),
+      })),
       "accommodation": {
         "residence_years": int.tryParse(_residenceAgeCtrl.text) ?? 0,
         "authorized": _residenceAuthorized == 'Yes',
@@ -951,7 +963,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "fuel_facility": _residenceFuelFacility,
         "has_solar_energy_facility": _residenceSolarEnergy == 'Yes',
         "documentary_evidence": _residenceDocumentaryEvidence == 'Yes',
-        "photo_house_url": _housePhotoUrl,
+        "photo_house_url": await _resolveImageUrl(_housePhotoUrl, forLocalSave: forLocalSave),
       },
       "holds_land": _landHolds == 'Yes',
       "lands": _landRecords.map((l) => {
@@ -965,23 +977,23 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "land_mortgaged_to": l.landMortgagedToCtrl.text,
         "land_mortgaged_details": l.landMortgagedDetailsCtrl.text,
       }).toList(),
-      "trees": _treeRecords.map((t) => {
+      "trees": await Future.wait(_treeRecords.map((t) async => {
         "name": t.nameCtrl.text,
         "number_of_trees": int.tryParse(t.countCtrl.text) ?? 0,
         "age_of_tree": int.tryParse(t.ageCtrl.text) ?? 0,
-        "tree_photo": t.photoUrl,
-      }).toList(),
-      "assets": _assetRecords.map((a) => {
+        "tree_photo": await _resolveImageUrl(t.photoUrl, forLocalSave: forLocalSave),
+      })),
+      "assets": await Future.wait(_assetRecords.map((a) async => {
         "name": a.nameCtrl.text,
         "count": int.tryParse(a.countCtrl.text) ?? 0,
-        "asset_photo": a.photoUrl,
-      }).toList(),
-      "livestocks": _livestockRecords.map((l) => {
+        "asset_photo": await _resolveImageUrl(a.photoUrl, forLocalSave: forLocalSave),
+      })),
+      "livestocks": await Future.wait(_livestockRecords.map((l) async => {
         "name": l.nameCtrl.text,
         "count": int.tryParse(l.countCtrl.text) ?? 0,
-        "livestock_photo": l.photoUrl,
+        "livestock_photo": await _resolveImageUrl(l.photoUrl, forLocalSave: forLocalSave),
         "cattle_paddy_type": l.cattlePaddyType,
-      }).toList(),
+      })),
       "income": {
         "farming": double.tryParse(_incomeFarmingCtrl.text) ?? 0,
         "job": double.tryParse(_incomeJobCtrl.text) ?? 0,
@@ -1077,6 +1089,36 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         );
       }
     }
+  }
+
+  Widget _buildImagePreview(String? url) {
+    if (url != null) {
+      if (url.startsWith('http')) {
+        return Image.network(
+          url,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+        );
+      } else {
+        return Image.file(
+          File(url),
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+        );
+      }
+    }
+    return const Icon(Icons.camera_alt);
+  }
+
+  Widget _buildReviewImage(String url, {double? height, BoxFit? fit}) {
+    if (url.startsWith('http')) {
+      return Image.network(url, height: height, fit: fit, errorBuilder: (c, e, s) => const Icon(Icons.broken_image));
+    }
+    return Image.file(File(url), height: height, fit: fit, errorBuilder: (c, e, s) => const Icon(Icons.broken_image));
   }
 
   Widget _buildMemberForm(FamilyMember member, int index) {
@@ -1223,7 +1265,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         TextFormField(controller: tree.ageCtrl, decoration: const InputDecoration(labelText: 'How old is the tree? (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.camera_alt),
+          leading: _buildImagePreview(tree.photoUrl),
           title: Text(tree.photoUrl != null ? 'Photo Captured' : 'Capture Tree Photo'),
           onTap: () => _captureAndUploadPhoto((url) => setState(() => tree.photoUrl = url)),
           trailing: tree.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1285,7 +1327,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         TextFormField(controller: asset.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.camera_alt),
+          leading: _buildImagePreview(asset.photoUrl),
           title: Text(asset.photoUrl != null ? 'Photo Captured' : 'Capture Asset Photo'),
           onTap: () => _captureAndUploadPhoto((url) => setState(() => asset.photoUrl = url)),
           trailing: asset.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1312,7 +1354,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _buildDropdown('Cattle Paddy Type', livestock.cattlePaddyType, ['Raw', 'Ripe', 'N/A'], (val) => setState(() { livestock.cattlePaddyType = val; })),
         ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.camera_alt),
+            leading: _buildImagePreview(livestock.photoUrl),
             title: Text(livestock.photoUrl != null ? 'Photo Captured' : 'Capture Livestock Photo'),
             onTap: () => _captureAndUploadPhoto((url) => setState(() => livestock.photoUrl = url)),
             trailing: livestock.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null),
@@ -1361,7 +1403,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             const SizedBox(height: 16),
             Text('Photo & Document Capture', style: Theme.of(context).textTheme.titleLarge),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: _buildImagePreview(_familyMembers[0].photoUrl),
               title: Text(_familyMembers[0].photoUrl != null ? 'Photo Captured' : 'Capture photo of person'),
               onTap: () => _captureAndUploadPhoto((url) => setState(() => _familyMembers[0].photoUrl = url)),
               trailing: _familyMembers[0].photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1407,7 +1449,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             Text('Residence Document Capture', style: Theme.of(context).textTheme.titleLarge),
             _buildDropdown('Is there documentary evidence?', _residenceDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { _residenceDocumentaryEvidence = val; })),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: _buildImagePreview(_housePhotoUrl),
               title: Text(_housePhotoUrl != null ? 'Photo Captured' : 'Capture House/Document Photo'),
               onTap: () => _captureAndUploadPhoto((url) => setState(() => _housePhotoUrl = url)),
               trailing: _housePhotoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1517,7 +1559,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.network(_signatureUrl!, height: 150, fit: BoxFit.contain),
+                  _buildReviewImage(_signatureUrl!, height: 150, fit: BoxFit.contain),
                   TextButton(onPressed: () => setState(() => _signatureUrl = null), child: const Text('Clear and Sign Again')),
                 ],
               )
@@ -1557,7 +1599,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   if (_familyMembers[i].photoUrl != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Image.network(_familyMembers[i].photoUrl!, height: 100),
+                      child: _buildReviewImage(_familyMembers[i].photoUrl!, height: 100),
                     ),
                    _buildReviewRow('Relationship', _familyMembers[i].relationship),
                   _buildReviewRow('Gender', _familyMembers[i].gender),
@@ -1579,7 +1621,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             if (_housePhotoUrl != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Image.network(_housePhotoUrl!, height: 100),
+                child: _buildReviewImage(_housePhotoUrl!, height: 100),
               ),
              _buildReviewRow('Electricity', _residenceElectricity),
             _buildReviewRow('House Photo', _housePhotoUrl != null ? 'Captured' : 'Not Captured'),
@@ -1599,7 +1641,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildReviewRow(tree.nameCtrl.text, 'Count: ${tree.countCtrl.text}'),
-                    if (tree.photoUrl != null) Image.network(tree.photoUrl!, height: 80),
+                    if (tree.photoUrl != null) _buildReviewImage(tree.photoUrl!, height: 80),
                   ],
                 ),
               ),
@@ -1613,14 +1655,14 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     _buildReviewRow(asset.nameCtrl.text, 'Count: ${asset.countCtrl.text}'),
-                    if (asset.photoUrl != null) Image.network(asset.photoUrl!, height: 80),
+                    if (asset.photoUrl != null) _buildReviewImage(asset.photoUrl!, height: 80),
                   ])),
 
             _buildReviewRow('Livestock Records', _livestockRecords.isNotEmpty ? '${_livestockRecords.length} record(s)' : 'None'),
             for (var livestock in _livestockRecords)
               Padding(padding: const EdgeInsets.only(left: 16.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _buildReviewRow(livestock.nameCtrl.text, 'Count: ${livestock.countCtrl.text}'),
-                if (livestock.photoUrl != null) Image.network(livestock.photoUrl!, height: 80),
+                if (livestock.photoUrl != null) _buildReviewImage(livestock.photoUrl!, height: 80),
               ])),
 
 
@@ -1638,7 +1680,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             if (_signatureUrl != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Image.network(_signatureUrl!, height: 50, fit: BoxFit.contain),
+                child: _buildReviewImage(_signatureUrl!, height: 50, fit: BoxFit.contain),
               )
             else if (_signatureController.isNotEmpty)
               Padding(
