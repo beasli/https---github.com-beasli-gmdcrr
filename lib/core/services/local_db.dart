@@ -118,6 +118,16 @@ class LocalDb {
     return d.update('village_entries', values, where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Fetches all pending village surveys.
+  Future<List<Map<String, Object?>>> pendingVillageSurveys() async {
+    return pendingEntries();
+  }
+
+  /// Deletes a village survey entry by ID.
+  Future<int> deleteVillageSurvey(int id) async {
+    return deleteEntry(id);
+  }
+
   // === Family Survey Methods ===
 
   /// Inserts or updates a family survey draft.

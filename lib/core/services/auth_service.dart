@@ -1,60 +1,75 @@
 import 'package:dio/dio.dart';
-import 'dart:developer' as developer;
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api.dart';
+import '../utils/globals.dart';
 
-
-class AuthService {
+class AuthService extends ChangeNotifier {
   final Dio _dio = Dio();
+  bool _isAuthenticated = false;
 
-  Future<String?> login(String username, String password) async {
-    const url = 'https://api-gmdc-lams.lgeom.com/v1/auth/login'; // Replace as needed
-    try {
-      final response = await _dio.post(
-        url,
-        data: {'email': username, 'password': password},
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
-      );
-     
-     if (response.statusCode == 201 && response.data['data']['accessToken'] != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('accessToken', response.data['data']['accessToken']);
-        return 'true';
-      }
-    } catch (e) {
-      if (e is DioException) {
-        final status = e.response?.statusCode;
-        final data = e.response?.data;
-        // Handle common auth errors explicitly
-        if (status == 400) {
-          return 'Invalid credentials';
-        }
-        if (status == 401) {
-          // Server returns JSON like { message: "Invalid login details", error: "Unauthorized", statusCode: 401 }
-          if (data is Map && data['message'] is String) {
-            return data['message'] as String;
-          }
-          return 'Unauthorized';
-        }
-        // Optionally log response body for other errors
-        developer.log('Login error response: ${e.response?.data}', name: 'auth');
-      } else {
-          developer.log('Login error: $e', name: 'auth');
-      }
-    }
-    return null; 
-  }
+  bool get isAuthenticated => _isAuthenticated;
 
-   // For future API calls: Retrieve token
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('accessToken');
+    return prefs.getString('auth_token');
+  }
+
+  Future<bool> checkLoginStatus() async {
+    final token = await getToken();
+    // Check if token exists and is not empty. Add expiry logic here if needed.
+    _isAuthenticated = token != null && token.isNotEmpty;
+    notifyListeners();
+    return _isAuthenticated;
+  }
+
+  /// Logs in the user. Returns null if successful, or an error message string.
+  Future<String?> login(String username, String password) async {
+    try {
+      final response = await _dio.post(
+        '$kApiBaseUrl/auth/login',
+        data: {'email': username, 'password': password},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Adjust key based on your actual API response (e.g. 'token', 'access_token', or data['token'])
+        final token = response.data['accessToken'] ?? response.data['data']?['accessToken'];
+        
+        if (token != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', token);
+          _isAuthenticated = true;
+          notifyListeners();
+          return null; // Success
+        }
+      }
+      return 'Invalid credentials ${response.statusCode}';
+    } on DioException catch (e) {
+      print('Login error: ${e.response?.data ?? e.message}');
+      return e.response?.data?['message'] ?? 'Login failed. Please check your connection.';
+    } catch (e) {
+      return 'An unexpected error occurred: $e';
+    }
   }
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('accessToken');
+    await prefs.remove('auth_token');
+    _isAuthenticated = false;
+    notifyListeners();
   }
 
+  Future<void> handleSessionExpired() async {
+    await logout();
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session expired. Please login again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+    }
+  }
 }
