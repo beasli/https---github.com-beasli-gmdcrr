@@ -21,7 +21,7 @@ class FamilyMember {
   TextEditingController ageCtrl = TextEditingController();
   String? caste;
   String? studying;
-  TextEditingController educationCtrl = TextEditingController();
+  String? education;
   String? maritalStatus;
   String? religion;
   TextEditingController bplCardCtrl = TextEditingController();
@@ -185,6 +185,25 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     penColor: Colors.black,
     exportBackgroundColor: Colors.white,
   );
+
+  final List<Map<String, String>> _educationOptions = [
+    {'label': 'Illiterate', 'value': 'Illiterate'},
+    {'label': 'Literate', 'value': 'Literate'},
+    {'label': 'Primary (Up to 5th)', 'value': 'Primary'},
+    {'label': 'Middle (6th–8th)', 'value': 'Middle'},
+    {'label': 'Below 10th', 'value': 'Below 10th'},
+    {'label': '10th Pass', 'value': '10th Pass'},
+    {'label': '12th Pass', 'value': '12th Pass'},
+    {'label': 'Diploma', 'value': 'Diploma'},
+    {'label': 'ITI', 'value': 'ITI'},
+    {'label': 'Polytechnic', 'value': 'Polytechnic'},
+    {'label': 'Graduate', 'value': 'Graduate'},
+    {'label': 'Post Graduate', 'value': 'Post Graduate'},
+    {'label': 'Doctorate (PhD)', 'value': 'Doctorate'},
+    {'label': 'Professional (CA / CS / CMA / etc.)', 'value': 'Professional'},
+    {'label': 'Pursuing (optional – useful for students)', 'value': 'Pursuing'},
+    {'label': 'Other', 'value': 'Other'},
+  ];
 
   // A helper function for simple validation
   String? _validateRequired(String? value) {
@@ -350,7 +369,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     member.nameCtrl.dispose();
     member.relationshipCtrl.dispose();
     member.ageCtrl.dispose();
-    member.educationCtrl.dispose();
     member.bplCardCtrl.dispose();
     member.aadharCtrl.dispose();
     member.mobileCtrl.dispose();
@@ -634,7 +652,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           member.handicapped = (memberData['is_handicapped'] == true) ? 'Yes' : 'No';
           member.aadharCtrl.text = memberData['aadhar_no']?.toString() ?? '';
           member.mobileCtrl.text = memberData['mobile_no']?.toString() ?? '';
-          member.educationCtrl.text = memberData['education_qualification']?.toString() ?? '';
+          member.education = memberData['education_qualification']?.toString();
           member.studying = (memberData['studying_in_progress'] == true) ? 'Yes' : 'No';
           member.artisanSkillCtrl.text = memberData['artisan_details']?.toString() ?? '';
           member.skillTrainingInterest = (memberData['interested_in_training'] == true) ? 'Yes' : 'No';
@@ -873,7 +891,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "handicapped": m.handicapped == 'Yes',
         "aadhar_no": m.aadharCtrl.text,
         "mobile_no": m.mobileCtrl.text,
-        "education_qualification": m.educationCtrl.text,
+        "education_qualification": m.education,
         "studying_in_progress": m.studying == 'Yes',
         "artisan_details": m.artisanSkillCtrl.text,
         "interested_in_training": m.skillTrainingInterest == 'Yes',
@@ -1099,7 +1117,16 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: _validateAadhar),
         TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: _validateMobile),
         if (isHead) TextFormField(controller: member.bplCardCtrl, decoration: const InputDecoration(labelText: 'BPL Card No.')),
-        TextFormField(controller: member.educationCtrl, decoration: const InputDecoration(labelText: 'Education Qualification'), validator: _validateRequired),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          value: _educationOptions.any((e) => e['value'] == member.education) ? member.education : null,
+          decoration: const InputDecoration(labelText: 'Education Qualification'),
+          items: _educationOptions.map((opt) {
+            return DropdownMenuItem<String>(value: opt['value'], child: Text(opt['label']!));
+          }).toList(),
+          onChanged: (val) => setState(() { member.education = val; }),
+          validator: _validateRequired,
+        ),
         DropdownButtonFormField<String>(
           value: member.studying,
           decoration: const InputDecoration(labelText: 'Studying in progress?'),
