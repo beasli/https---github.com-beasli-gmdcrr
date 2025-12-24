@@ -1089,7 +1089,14 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             decoration: const InputDecoration(labelText: 'Relationship with Head'),
             items: ['Spouse', 'Son', 'Daughter', 'Father', 'Mother', 'Brother', 'Sister', 'Grandparent', 'In-law', 'Other Relative', 'Non-relative']
                 .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-            onChanged: (val) => setState(() { member.relationship = val; }),
+            onChanged: (val) => setState(() {
+              member.relationship = val;
+              if (['Daughter', 'Sister', 'Mother'].contains(val)) {
+                member.gender = 'F';
+              } else if (['Son', 'Father', 'Brother'].contains(val)) {
+                member.gender = 'M';
+              }
+            }),
             validator: _validateRequired,
           ),
         Row(children: [
