@@ -16,7 +16,7 @@ class FamilyMember {
   // Using unique keys for each member's form to handle state correctly in a list.
   final UniqueKey key = UniqueKey();
   TextEditingController nameCtrl = TextEditingController();
-  TextEditingController relationshipCtrl = TextEditingController();
+  String? relationship;
   String? gender;
   TextEditingController ageCtrl = TextEditingController();
   String? caste;
@@ -367,7 +367,6 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _disposeMemberControllers(FamilyMember member) {
     // photoUrl is just a string, no controller
     member.nameCtrl.dispose();
-    member.relationshipCtrl.dispose();
     member.ageCtrl.dispose();
     member.bplCardCtrl.dispose();
     member.aadharCtrl.dispose();
@@ -638,7 +637,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         for (var memberData in members) {
           final member = FamilyMember();
           member.nameCtrl.text = memberData['name']?.toString() ?? '';
-          member.relationshipCtrl.text = memberData['relationship_with_head']?.toString() ?? '';
+          member.relationship = memberData['relationship_with_head']?.toString();
           // Map API gender ('Male'/'Female') to form value ('M'/'F')
           final apiGender = memberData['gender']?.toString();
           if (apiGender != null) {
@@ -881,7 +880,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       },
       "members": _familyMembers.map((m) => {
         "name": m.nameCtrl.text,
-        "relationship_with_head": m.relationshipCtrl.text,
+        "relationship_with_head": m.relationship,
         // Map form value ('M'/'F') to API gender ('Male'/'Female')
         "gender": (m.gender == 'M') ? 'Male' : (m.gender == 'F' ? 'Female' : null),
         "age": int.tryParse(m.ageCtrl.text) ?? 0,
@@ -1050,7 +1049,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     // The first member is the Head of Family
     bool isHead = index == 0;
     if (isHead) {
-      member.relationshipCtrl.text = 'Head';
+      member.relationship = 'Head';
     }
 
     return Column(
@@ -1070,7 +1069,21 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ],
           ),
         TextFormField(controller: member.nameCtrl, decoration: InputDecoration(labelText: isHead ? 'Name of Head of Family' : 'Name'), validator: _validateRequired),
-        TextFormField(controller: member.relationshipCtrl, decoration: const InputDecoration(labelText: 'Relationship with Head'), readOnly: isHead, validator: _validateRequired),
+        if (isHead)
+          TextFormField(
+            initialValue: 'Head',
+            decoration: const InputDecoration(labelText: 'Relationship with Head'),
+            readOnly: true,
+          )
+        else
+          DropdownButtonFormField<String>(
+            value: member.relationship,
+            decoration: const InputDecoration(labelText: 'Relationship with Head'),
+            items: ['Spouse', 'Son', 'Daughter', 'Father', 'Mother', 'Brother', 'Sister', 'Grandparent', 'In-law', 'Other Relative', 'Non-relative']
+                .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+            onChanged: (val) => setState(() { member.relationship = val; }),
+            validator: _validateRequired,
+          ),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
             value: member.gender,
@@ -1505,7 +1518,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Image.network(_familyMembers[i].photoUrl!, height: 100),
                     ),
-                   _buildReviewRow('Relationship', _familyMembers[i].relationshipCtrl.text),
+                   _buildReviewRow('Relationship', _familyMembers[i].relationship),
                   _buildReviewRow('Gender', _familyMembers[i].gender),
                   _buildReviewRow('Age', _familyMembers[i].ageCtrl.text),
                   _buildReviewRow('Marital Status', _familyMembers[i].maritalStatus),
