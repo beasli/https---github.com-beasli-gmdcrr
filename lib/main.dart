@@ -7,6 +7,7 @@ import 'core/widgets/app_update_wrapper.dart';
 import 'core/services/auth_service.dart';
 import 'core/utils/globals.dart';
 import 'screens/auth/login_screen.dart';
+import 'core/widgets/offline_banner.dart';
 
 
 void main() {
@@ -46,38 +47,11 @@ class MyApp extends StatelessWidget {
                 children: [
                   child ?? const SizedBox.shrink(),
                   // Consumer rebuilds the banner whenever NetworkService notifies
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: Consumer<NetworkService>(
-                        builder: (context, svc, _) {
-                          if (svc.isOnline) return const SizedBox.shrink();
-                          return Material(
-                            color: Colors.red.shade700,
-                            elevation: 4,
-                            child: SafeArea(
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.signal_wifi_off, color: Colors.white),
-                                    SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        'No internet connection',
-                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: OfflineBanner(),
                   ),
                 ],
               ),
