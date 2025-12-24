@@ -29,7 +29,7 @@ class FamilyMember {
   TextEditingController mobileCtrl = TextEditingController();
   TextEditingController artisanSkillCtrl = TextEditingController();
   String? skillTrainingInterest;
-  String? handicapped;
+  String? handicapped = 'No';
   String? photoUrl; // Changed from photoPath to store remote URL
 }
 
