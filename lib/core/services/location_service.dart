@@ -1,6 +1,15 @@
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
+  /// Requests location permission if it is denied.
+  static Future<LocationPermission> requestPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    return permission;
+  }
+
   /// Attempts to get a current position with a timeout and reasonable fallbacks.
   /// Returns null if no usable location is available.
   static Future<Position?> getPositionWithFallback({Duration timeout = const Duration(seconds: 12)}) async {
