@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:gmdcrr/core/config/env.dart';
@@ -327,17 +328,26 @@ class _VillageFormPageState extends State<VillageFormPage> {
       }
   if (pos == null) {
         if (!mounted) return;
-        final tryAgain = await showDialog<bool>(
+        final tryAgain = await showGeneralDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Location not available'),
-            content: const Text('Unable to obtain your location. Please enable location services or try again outdoors.'),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-              TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Retry')),
-              TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Settings')),
-            ],
+          barrierDismissible: true,
+          barrierLabel: 'Dismiss',
+          transitionDuration: const Duration(milliseconds: 250),
+          pageBuilder: (ctx, animation, secondaryAnimation) => BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: AlertDialog(
+              title: const Text('Location not available'),
+              content: const Text('Unable to obtain your location. Please enable location services or try again outdoors.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+                TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Retry')),
+                TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Settings')),
+              ],
+            ),
           ),
+          transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         );
         if (tryAgain == true) {
           // Retry once
@@ -542,15 +552,24 @@ class _VillageFormPageState extends State<VillageFormPage> {
           }
         } else {
           if (!mounted) return;
-          await showDialog<void>(
+          await showGeneralDialog<void>(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Village not found'),
-              content: const Text('Village not found near you'),
-              actions: [
-                TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK')),
-              ],
+            barrierDismissible: true,
+            barrierLabel: 'Dismiss',
+            transitionDuration: const Duration(milliseconds: 250),
+            pageBuilder: (ctx, animation, secondaryAnimation) => BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: AlertDialog(
+                title: const Text('Village not found'),
+                content: const Text('Village not found near you'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK')),
+                ],
+              ),
             ),
+            transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
           );
           if (!mounted) return;
           // Return to app root (avoid importing HomeScreen to prevent circular imports)
@@ -1263,30 +1282,39 @@ class _VillageFormPageState extends State<VillageFormPage> {
                         final isImage = url.endsWith('.jpg') || url.endsWith('.jpeg') || url.endsWith('.png') || url.contains('image');
                         if (isImage) {
                           if (!mounted) return;
-                          showDialog<void>(
+                          showGeneralDialog<void>(
                             context: context,
-                            builder: (ctx) => Dialog(
-                              insetPadding: const EdgeInsets.all(8),
-                              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                Stack(children: [
-                                  SizedBox(height: 48, child: Align(alignment: Alignment.topRight, child: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(ctx).pop()))),
-                                ]),
-                                Expanded(
-                                  child: InteractiveViewer(
-                                    panEnabled: true,
-                                    minScale: 0.5,
-                                    maxScale: 4.0,
-                                    child: Image.network(
-                                      url,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (c, e, s) => const Center(child: Icon(Icons.broken_image, size: 48)),
+                            barrierDismissible: true,
+                            barrierLabel: 'Dismiss',
+                            transitionDuration: const Duration(milliseconds: 250),
+                            pageBuilder: (ctx, animation, secondaryAnimation) => BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Dialog(
+                                insetPadding: const EdgeInsets.all(8),
+                                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                  Stack(children: [
+                                    SizedBox(height: 48, child: Align(alignment: Alignment.topRight, child: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(ctx).pop()))),
+                                  ]),
+                                  Expanded(
+                                    child: InteractiveViewer(
+                                      panEnabled: true,
+                                      minScale: 0.5,
+                                      maxScale: 4.0,
+                                      child: Image.network(
+                                        url,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (c, e, s) => const Center(child: Icon(Icons.broken_image, size: 48)),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                if (name != null) Padding(padding: const EdgeInsets.all(8.0), child: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis, maxLines: 2)),
-                                Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(type ?? 'image', style: const TextStyle(fontSize: 12, color: Colors.black54))),
-                              ]),
+                                  if (name != null) Padding(padding: const EdgeInsets.all(8.0), child: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis, maxLines: 2)),
+                                  Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(type ?? 'image', style: const TextStyle(fontSize: 12, color: Colors.black54))),
+                                ]),
+                              ),
                             ),
+                            transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+                              return FadeTransition(opacity: animation, child: child);
+                            },
                           );
                         } else {
                           await openUrl(url);

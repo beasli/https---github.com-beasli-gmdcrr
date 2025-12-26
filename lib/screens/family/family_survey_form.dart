@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:typed_data';
@@ -562,7 +563,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     if (remoteUrl != null) {
       _localToRemoteMap[photoPath] = remoteUrl;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo uploaded successfully!'), backgroundColor: Colors.green),
+        const SnackBar(content: Text('Photo uploaded successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -604,7 +605,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _villageNameCtrl.text = villageData['data']['village']['name'] ?? 'N/A';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Village found: ${_villageNameCtrl.text}'), backgroundColor: Colors.green),
+        SnackBar(content: Text('Village found: ${_villageNameCtrl.text}', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.green),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -633,7 +634,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       // Only show snackbar if it wasn't a local draft load
       if (initialData == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Survey data loaded for editing.'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Survey data loaded for editing.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
         );
       }
     } else {
@@ -1135,7 +1136,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       key: member.key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!isHead)
+        if (!isHead) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1147,7 +1148,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+        ],
         TextFormField(controller: member.nameCtrl, decoration: InputDecoration(labelText: isHead ? 'Name of Head of Family' : 'Name'), validator: _validateRequired),
+        const SizedBox(height: 12),
         if (isHead)
           TextFormField(
             initialValue: 'Head',
@@ -1170,6 +1174,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             }),
             validator: _validateRequired,
           ),
+        const SizedBox(height: 12),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
             value: member.gender,
@@ -1181,6 +1186,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           const SizedBox(width: 8),
           Expanded(child: TextFormField(controller: member.ageCtrl, decoration: const InputDecoration(labelText: 'Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired)),
         ]),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: member.maritalStatus,
           decoration: const InputDecoration(labelText: 'Marital Status'),
@@ -1188,6 +1194,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           onChanged: (val) => setState(() { member.maritalStatus = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _religionOptions.contains(member.religion) ? member.religion : null,
           decoration: const InputDecoration(labelText: 'Religion'),
@@ -1197,6 +1204,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           onChanged: (val) => setState(() { member.religion = val; }),
           validator: _validateRequired,
         ),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: member.caste,
           decoration: const InputDecoration(labelText: 'Caste'),
@@ -1204,6 +1212,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           onChanged: (val) => setState(() { member.caste = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: member.handicapped,
           decoration: const InputDecoration(labelText: 'Handicapped'),
@@ -1213,9 +1222,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ),
         const SizedBox(height: 16),
         if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleLarge),
+        if (isHead) const SizedBox(height: 8),
         TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
+        const SizedBox(height: 12),
         TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: (v) => _validateMobile(v, isMandatory: isHead)),
+        const SizedBox(height: 12),
         if (isHead) TextFormField(controller: member.bplCardCtrl, decoration: const InputDecoration(labelText: 'BPL Card No.')),
+        if (isHead) const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           isExpanded: true,
           value: _educationOptions.any((e) => e['value'] == member.education) ? member.education : null,
@@ -1226,6 +1239,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           onChanged: (val) => setState(() { member.education = val; }),
           validator: _validateRequired,
         ),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: member.studying,
           decoration: const InputDecoration(labelText: 'Studying in progress?'),
@@ -1233,7 +1247,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           onChanged: (val) => setState(() { member.studying = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
+        const SizedBox(height: 12),
         TextFormField(controller: member.artisanSkillCtrl, decoration: const InputDecoration(labelText: 'Artisan/Skill Details')),
+        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: member.skillTrainingInterest,
           decoration: const InputDecoration(labelText: 'Interested in Skill Training?'),
@@ -1255,7 +1271,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Tree Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium),
+            Text('Tree Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14)),
             TextButton.icon(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               label: const Text('Remove', style: TextStyle(color: Colors.red)),
@@ -1263,9 +1279,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
         TextFormField(controller: tree.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Tree'), validator: _validateRequired),
+        const SizedBox(height: 12),
         TextFormField(controller: tree.countCtrl, decoration: const InputDecoration(labelText: 'Number of trees'), keyboardType: TextInputType.number, validator: _validateRequired),
+        const SizedBox(height: 12),
         TextFormField(controller: tree.ageCtrl, decoration: const InputDecoration(labelText: 'How old is the tree? (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        const SizedBox(height: 12),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: _buildImagePreview(tree.photoUrl),
@@ -1286,7 +1306,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Land Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium),
+            Text('Land Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14)),
             TextButton.icon(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               label: const Text('Remove', style: TextStyle(color: Colors.red)),
@@ -1294,15 +1314,24 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
         TextFormField(controller: land.khataNoCtrl, decoration: const InputDecoration(labelText: 'Khata No.'), validator: _validateRequired),
+        const SizedBox(height: 12),
         _buildDropdown('Land Type', land.landType, ['Agricultural', 'Commercial', 'Residential'], (val) => setState(() { land.landType = val; })),
+        const SizedBox(height: 12),
         TextFormField(controller: land.totalAreaCtrl, decoration: const InputDecoration(labelText: 'Total Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        const SizedBox(height: 12),
         TextFormField(controller: land.acquiredAreaCtrl, decoration: const InputDecoration(labelText: 'Acquired Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        const SizedBox(height: 12),
         TextFormField(controller: land.remainingAreaCtrl, decoration: const InputDecoration(labelText: 'Remaining Area (Sq. Meters)'), keyboardType: TextInputType.number, validator: _validateRequired),
+        const SizedBox(height: 12),
         _buildDropdown('Has Documentary Evidence?', land.hasDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { land.hasDocumentaryEvidence = val; })),
+        const SizedBox(height: 12),
         _buildDropdown('Is Land Mortgaged?', land.isLandMortgaged, ['Yes', 'No'], (val) => setState(() { land.isLandMortgaged = val; })),
         if (land.isLandMortgaged == 'Yes') ...[
+          const SizedBox(height: 12),
           TextFormField(controller: land.landMortgagedToCtrl, decoration: const InputDecoration(labelText: 'Land Mortgaged To'), validator: _validateRequired),
+          const SizedBox(height: 12),
           TextFormField(controller: land.landMortgagedDetailsCtrl, decoration: const InputDecoration(labelText: 'Mortgage Details'), validator: _validateRequired),
         ],
         const Divider(height: 32, thickness: 1),
@@ -1318,7 +1347,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Asset Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium),
+            Text('Asset Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14)),
             TextButton.icon(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               label: const Text('Remove', style: TextStyle(color: Colors.red)),
@@ -1326,8 +1355,11 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
         TextFormField(controller: asset.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Asset (e.g., Tractor, TV)'), validator: _validateRequired),
+        const SizedBox(height: 12),
         TextFormField(controller: asset.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
+        const SizedBox(height: 12),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: _buildImagePreview(asset.photoUrl),
@@ -1348,13 +1380,17 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Livestock Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium),
+            Text('Livestock Record ${index + 1}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14)),
             TextButton.icon(icon: const Icon(Icons.delete_outline, color: Colors.red), label: const Text('Remove', style: TextStyle(color: Colors.red)), onPressed: () => _removeLivestockRecord(index)),
           ],
         ),
+        const SizedBox(height: 12),
         TextFormField(controller: livestock.nameCtrl, decoration: const InputDecoration(labelText: 'Name of Livestock (e.g., Cow, Goat)'), validator: _validateRequired),
+        const SizedBox(height: 12),
         TextFormField(controller: livestock.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
+        const SizedBox(height: 12),
         _buildDropdown('Cattle Paddy Type', livestock.cattlePaddyType, ['Raw', 'Ripe', 'N/A'], (val) => setState(() { livestock.cattlePaddyType = val; })),
+        const SizedBox(height: 12),
         ListTile(
             contentPadding: EdgeInsets.zero,
             leading: _buildImagePreview(livestock.photoUrl),
@@ -1397,14 +1433,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step1Key,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Head of Family Details', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             TextFormField(controller: _familyNoCtrl, decoration: const InputDecoration(labelText: 'Family No.'), readOnly: true),
+            const SizedBox(height: 12),
             TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village Name'), readOnly: true, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _laneCtrl, decoration: const InputDecoration(labelText: 'Name of the Lane'), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _houseNoCtrl, decoration: const InputDecoration(labelText: 'House No.'), validator: _validateRequired),
             const SizedBox(height: 16),
             _buildMemberForm(_familyMembers[0], 0), // Form for the Head of Family
             const SizedBox(height: 16),
             Text('Photo & Document Capture', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             ListTile(
               leading: _buildImagePreview(_familyMembers[0].photoUrl),
               title: Text(_familyMembers[0].photoUrl != null ? 'Photo Captured' : 'Capture photo of person'),
@@ -1413,6 +1454,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
             const Divider(height: 32, thickness: 1),
             Text('Other Family Members', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             ..._familyMembers.asMap().entries.where((entry) => entry.key > 0).map((entry) => _buildMemberForm(entry.value, entry.key)),
             Center(child: ElevatedButton.icon(onPressed: _addFamilyMember, icon: const Icon(Icons.add), label: const Text('Add New Family Member'))),
           ]),
@@ -1426,31 +1468,51 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step2Key,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Residence Details - Part 1', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             TextFormField(controller: _residenceAgeCtrl, decoration: const InputDecoration(labelText: 'Residence Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             _buildDropdown('Is residence authorized?', _residenceAuthorized, ['Yes', 'No'], (val) => setState(() { _residenceAuthorized = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Owner or Tenant', _residenceOwnerTenant, ['Owner', 'Tenant'], (val) => setState(() { _residenceOwnerTenant = val; })),
+            const SizedBox(height: 12),
             TextFormField(controller: _residenceTotalRoomsCtrl, decoration: const InputDecoration(labelText: 'Total No. of rooms'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() { _residencePakkaKachha = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Type of Roof', _residenceRoofType, ['RCC', 'Sheets', 'Tubes'], (val) => setState(() { _residenceRoofType = val; })),
+            const SizedBox(height: 12),
             TextFormField(controller: _residencePlotAreaCtrl, decoration: const InputDecoration(labelText: 'Land/Plot Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _residenceConstructionAreaCtrl, decoration: const InputDecoration(labelText: 'Total Construction Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             _buildDropdown('Interested in R&R Colony?', _residenceRrColonyInterest, ['Yes', 'No'], (val) => setState(() { _residenceRrColonyInterest = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Interested in living independently?', _residenceLiveOwnLifeInterest, ['Yes', 'No'], (val) => setState(() { _residenceLiveOwnLifeInterest = val; })),
             const Divider(height: 32),
 
             Text('Residence Amenities', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             _buildDropdown('Well/Borewell', _residenceWellBorewell, ['Yes', 'No'], (val) => setState(() { _residenceWellBorewell = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Toilet facilities', _residenceToiletFacilities, ['Yes', 'No'], (val) => setState(() { _residenceToiletFacilities = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Cesspool', _residenceCesspool, ['Yes', 'No'], (val) => setState(() { _residenceCesspool = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Drainage Facility', _residenceDrainageFacility, ['Underground', 'Open', 'None'], (val) => setState(() { _residenceDrainageFacility = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Water Tap Facility', _residenceWaterTap, ['Yes', 'No'], (val) => setState(() { _residenceWaterTap = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Electricity facility', _residenceElectricity, ['Yes', 'No'], (val) => setState(() { _residenceElectricity = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Fuel Facility', _residenceFuelFacility, ['Wood', 'Coal', 'Kerosene', 'Gas'], (val) => setState(() { _residenceFuelFacility = val; })),
+            const SizedBox(height: 12),
             _buildDropdown('Solar Energy Facility', _residenceSolarEnergy, ['Yes', 'No'], (val) => setState(() { _residenceSolarEnergy = val; })),
             const Divider(height: 32),
 
             Text('Residence Document Capture', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             _buildDropdown('Is there documentary evidence?', _residenceDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { _residenceDocumentaryEvidence = val; })),
+            const SizedBox(height: 12),
             ListTile(
               leading: _buildImagePreview(_housePhotoUrl),
               title: Text(_housePhotoUrl != null ? 'Photo Captured' : 'Capture House/Document Photo'),
@@ -1468,6 +1530,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step3Key,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Land Ownership Details', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             _buildDropdown('Does the family hold any land?', _landHolds, ['Yes', 'No'], (val) => setState(() { _landHolds = val; })),
             if (_landHolds == 'Yes') ...[
               const SizedBox(height: 16),
@@ -1477,6 +1540,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ],
             const Divider(height: 32),
             Text('Tree Details', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             if (_treeRecords.isEmpty)
               const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No tree records added.'))),
             ..._treeRecords.asMap().entries.map((entry) => _buildTreeRecordForm(entry.value, entry.key)),
@@ -1492,22 +1556,31 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step4Key, 
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Annual Income Sources', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             TextFormField(controller: _incomeFarmingCtrl, decoration: const InputDecoration(labelText: 'Farming'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _incomeJobCtrl, decoration: const InputDecoration(labelText: 'Job (Govt/Semi-Govt/Other)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _incomeBusinessCtrl, decoration: const InputDecoration(labelText: 'Business'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _incomeLaborCtrl, decoration: const InputDecoration(labelText: 'Labor (Agricultural/Other)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _incomeHouseworkCtrl, decoration: const InputDecoration(labelText: 'Housework'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _incomeOtherCtrl, decoration: const InputDecoration(labelText: 'Other income'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _estimatedAnnualIncomeCtrl, decoration: const InputDecoration(labelText: 'Total Estimated Annual Income'), readOnly: true, validator: _validateRequired),
             const Divider(height: 32),
 
             Text('Other Assets', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             if (_assetRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No asset records added.'))),
             ..._assetRecords.asMap().entries.map((entry) => _buildAssetRecordForm(entry.value, entry.key)),
             Center(child: ElevatedButton.icon(onPressed: _addAssetRecord, icon: const Icon(Icons.add), label: const Text('Add an asset record'))),
             const Divider(height: 32),
 
             Text('Livestock Details', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             if (_livestockRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No livestock records added.'))),
             ..._livestockRecords.asMap().entries.map((entry) => _buildLivestockRecordForm(entry.value, entry.key)),
             Center(child: ElevatedButton.icon(onPressed: _addLivestockRecord, icon: const Icon(Icons.add), label: const Text('Add a livestock record'))),
@@ -1523,32 +1596,51 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _step5Key,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Annual Expenses', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             TextFormField(controller: _expenseAgricultureCtrl, decoration: const InputDecoration(labelText: 'Agriculture'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseHouseCtrl, decoration: const InputDecoration(labelText: 'House'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseFoodCtrl, decoration: const InputDecoration(labelText: 'Food'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseFuelCtrl, decoration: const InputDecoration(labelText: 'Fuel'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseElectricityCtrl, decoration: const InputDecoration(labelText: 'Electricity'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseClothsCtrl, decoration: const InputDecoration(labelText: 'Cloths'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseHealthCtrl, decoration: const InputDecoration(labelText: 'Health'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseEducationCtrl, decoration: const InputDecoration(labelText: 'Education'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseTransportationCtrl, decoration: const InputDecoration(labelText: 'Transportation'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseCommunicationCtrl, decoration: const InputDecoration(labelText: 'Communication'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseCinemaHotelCtrl, decoration: const InputDecoration(labelText: 'Cinema/Hotel'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseTaxesCtrl, decoration: const InputDecoration(labelText: 'Taxes'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             TextFormField(controller: _expenseOthersCtrl, decoration: const InputDecoration(labelText: 'Others'), keyboardType: TextInputType.number, validator: _validateRequired),
             const Divider(height: 32),
 
             Text('Loans and Debts', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             _buildDropdown('Have taken any loan?', _loanTaken, ['Yes', 'No'], (val) => setState(() { _loanTaken = val; })),
             if (_loanTaken == 'Yes') ...[
+              const SizedBox(height: 12),
               TextFormField(controller: _loanAmountCtrl, decoration: const InputDecoration(labelText: 'Loan Amount (Rs.)'), keyboardType: TextInputType.number, validator: _validateRequired),
+              const SizedBox(height: 12),
               TextFormField(controller: _loanTenureYearsCtrl, decoration: const InputDecoration(labelText: 'Loan Tenure (Years)'), keyboardType: TextInputType.number, validator: _validateRequired),
+              const SizedBox(height: 12),
               TextFormField(controller: _loanObtainedFromCtrl, decoration: const InputDecoration(labelText: 'Where is the loan obtained from?'), validator: _validateRequired),
+              const SizedBox(height: 12),
               TextFormField(controller: _loanPurposeCtrl, decoration: const InputDecoration(labelText: 'Purpose of getting loan'), validator: _validateRequired),
             ],
             const Divider(height: 32),
 
             Text('Final Verification', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.gps_fixed, color: _finalGpsLocation != null ? Colors.green : null),
@@ -1727,22 +1819,31 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         // If processing, prevent user from leaving
         if (_isProcessing) return false;
 
-        final shouldSave = await showDialog<bool>(
+        final shouldSave = await showGeneralDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Save Progress?'),
-            content: const Text('Do you want to save your changes as a local draft before leaving?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false), // Don't save
-                child: const Text('Discard'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true), // Save
-                child: const Text('Save Draft'),
-              ),
-            ],
+          barrierDismissible: true,
+          barrierLabel: 'Dismiss',
+          transitionDuration: const Duration(milliseconds: 250),
+          pageBuilder: (context, animation, secondaryAnimation) => BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: AlertDialog(
+              title: const Text('Save Progress?'),
+              content: const Text('Do you want to save your changes as a local draft before leaving?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false), // Don't save
+                  child: const Text('Discard'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true), // Save
+                  child: const Text('Save Draft'),
+                ),
+              ],
+            ),
           ),
+          transitionBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         );
 
         // If the dialog is dismissed (e.g., by tapping outside), do nothing.

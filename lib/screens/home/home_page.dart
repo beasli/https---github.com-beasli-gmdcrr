@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/local_db.dart';
@@ -153,70 +154,237 @@ class _HomePageState extends State<HomePage> {
     return WillPopScope(
       onWillPop: () async {
         if (_isSyncing) return false; // Prevent exit during sync
-        final shouldPop = await showDialog<bool>(
+        final shouldPop = await showGeneralDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Exit App?'),
-            content: const Text('Are you sure you want to exit the application?'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Exit'),
-              ),
-            ],
+          barrierDismissible: true,
+          barrierLabel: 'Dismiss',
+          transitionDuration: const Duration(milliseconds: 250),
+          pageBuilder: (context, animation, secondaryAnimation) => BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: AlertDialog(
+              title: const Text('Exit App?'),
+              content: const Text('Are you sure you want to exit the application?'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Exit'),
+                ),
+              ],
+            ),
           ),
+          transitionBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         );
         return shouldPop ?? false;
       },
       child: Stack(
         children: [
           Scaffold(
-            appBar: AppBar(title: const Text("Home")),
-            body: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton(
-                    child: const Text("Village Survey"),
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VillageFormPage())).then((_) => _checkAndSyncLocalData());
-                    },
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: Center(
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.90,
+                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(5, 30, 30, 0.7), // Glassmorphism dark bg
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(
+                      color: const Color(0xFF36D1A8).withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    child: const Text("Family Survey"),
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilySurveyListPage())).then((_) => _checkAndSyncLocalData());
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- Header Area ---
+                      const Text(
+                        "Dashboard",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Welcome to your\nVillage Survey.",
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFFD0D7DD), // Light grey
+                          height: 1.4,
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 32), // Spacing between header and grid
+
+                      // --- Tiles Grid ---
+                      Expanded(
+                        child: GridView.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 1.0, // Square tiles
+                          children: [
+                            _buildDashboardTile(
+                              icon: Icons.home_outlined,
+                              label: "Village Survey",
+                              onTap: () {
+                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VillageFormPage())).then((_) => _checkAndSyncLocalData());
+                              },
+                            ),
+                            _buildDashboardTile(
+                              icon: Icons.people_outline,
+                              label: "Family Survey",
+                              onTap: () {
+                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilySurveyListPage())).then((_) => _checkAndSyncLocalData());
+                              },
+                            ),
+                            _buildDashboardTile(
+                              icon: Icons.access_time,
+                              label: "Pending Entries",
+                              isHighlighted: true,
+                              onTap: () {
+                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage())).then((_) => _checkAndSyncLocalData());
+                              },
+                            ),
+                            _buildDashboardTile(
+                              icon: Icons.power_settings_new,
+                              label: "Logout",
+                              onTap: () async {
+                                final shouldLogout = await showGeneralDialog<bool>(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  barrierLabel: 'Dismiss',
+                                  transitionDuration: const Duration(milliseconds: 250),
+                                  pageBuilder: (context, animation, secondaryAnimation) => BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                    child: AlertDialog(
+                                      title: const Text('Logout'),
+                                      content: const Text('Are you sure you want to logout?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(context).pop(false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.of(context).pop(true),
+                                          child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  transitionBuilder: (context, animation, secondaryAnimation, child) {
+                                    return FadeTransition(opacity: animation, child: child);
+                                  },
+                                );
+
+                                if (shouldLogout == true) {
+                                  await AuthService().logout();
+                                  if (!mounted) return;
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                    (route) => false,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    child: const Text("Pending Entries"),
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage())).then((_) => _checkAndSyncLocalData());
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    child: const Text("Logout"),
-                    onPressed: () async {
-                      await AuthService().logout();
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (route) => false, // Remove all previous routes
-                      );
-                    },
-                  ),
-                ],
+                ),
               ),
             ),
           ),
           if (_isSyncing) _buildSyncOverlay(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardTile({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isHighlighted = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        splashColor: isHighlighted 
+            ? const Color(0xFFF6A623).withOpacity(0.3) 
+            : const Color(0xFF00C46A).withOpacity(0.3),
+        highlightColor: isHighlighted 
+            ? const Color(0xFFF6A623).withOpacity(0.1) 
+            : const Color(0xFF00C46A).withOpacity(0.1),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            // Highlighted tile gets a gradient, others get dark translucent fill
+            gradient: isHighlighted
+                ? const LinearGradient(
+                    colors: [Color(0xFFF6A623), Color(0xFFD88A16)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isHighlighted 
+                ? null 
+                : const Color.fromRGBO(20, 40, 40, 0.6), // Dark grey/green 70-80% opacity equivalent
+            border: Border.all(
+              color: isHighlighted
+                  ? const Color(0xFFF6A623).withOpacity(0.8)
+                  : const Color(0xFF36D1A8).withOpacity(0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 36,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
