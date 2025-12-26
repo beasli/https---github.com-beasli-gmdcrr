@@ -23,6 +23,7 @@ class _AppUpdateWrapperState extends State<AppUpdateWrapper> {
   }
 
   Future<void> _checkVersion() async {
+    return; // Temporarily disable version checks
     final service = AppVersionService();
     final data = await service.checkVersion();
 

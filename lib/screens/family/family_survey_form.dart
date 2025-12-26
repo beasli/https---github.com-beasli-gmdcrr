@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:typed_data';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import './family_survey_service.dart';
 import '../village/camera_capture.dart';
 import '../../core/services/village_service.dart';
 import '../../core/config/api.dart';
+import '../../core/services/location_service.dart';
 import '../../core/services/local_db.dart';
 import 'package:signature/signature.dart';
 import '../../core/config/env.dart';
@@ -16,20 +19,20 @@ class FamilyMember {
   // Using unique keys for each member's form to handle state correctly in a list.
   final UniqueKey key = UniqueKey();
   TextEditingController nameCtrl = TextEditingController();
-  TextEditingController relationshipCtrl = TextEditingController();
+  String? relationship;
   String? gender;
   TextEditingController ageCtrl = TextEditingController();
   String? caste;
   String? studying;
-  TextEditingController educationCtrl = TextEditingController();
+  String? education;
   String? maritalStatus;
-  TextEditingController religionCtrl = TextEditingController();
+  String? religion;
   TextEditingController bplCardCtrl = TextEditingController();
   TextEditingController aadharCtrl = TextEditingController();
   TextEditingController mobileCtrl = TextEditingController();
   TextEditingController artisanSkillCtrl = TextEditingController();
   String? skillTrainingInterest;
-  String? handicapped;
+  String? handicapped = 'No';
   String? photoUrl; // Changed from photoPath to store remote URL
 }
 
@@ -186,6 +189,77 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     exportBackgroundColor: Colors.white,
   );
 
+  final Map<String, String> _localToRemoteMap = {};
+
+  Future<String?> _resolveImageUrl(String? url, {bool forLocalSave = false}) async {
+    if (url == null || url.isEmpty) return null;
+    if (forLocalSave) return url;
+    if (url.startsWith('http')) return url;
+    if (_localToRemoteMap.containsKey(url)) return _localToRemoteMap[url];
+
+    if (!kIsWeb) {
+      final file = File(url);
+      if (await file.exists()) {
+        try {
+          final bytes = await file.readAsBytes();
+          final remote = await _surveyService.uploadDocument(bytes, url);
+          if (remote != null) {
+            _localToRemoteMap[url] = remote;
+            return remote;
+          }
+        } catch (e) {
+          debugPrint('Error uploading image: $e');
+        }
+      }
+    }
+    return null;
+  }
+
+  final List<Map<String, String>> _educationOptions = [
+    {'label': 'Illiterate', 'value': 'Illiterate'},
+    {'label': 'Literate', 'value': 'Literate'},
+    {'label': 'Primary (Up to 5th)', 'value': 'Primary'},
+    {'label': 'Middle (6th–8th)', 'value': 'Middle'},
+    {'label': 'Below 10th', 'value': 'Below 10th'},
+    {'label': '10th Pass', 'value': '10th Pass'},
+    {'label': '12th Pass', 'value': '12th Pass'},
+    {'label': 'Diploma', 'value': 'Diploma'},
+    {'label': 'ITI', 'value': 'ITI'},
+    {'label': 'Polytechnic', 'value': 'Polytechnic'},
+    {'label': 'Graduate', 'value': 'Graduate'},
+    {'label': 'Post Graduate', 'value': 'Post Graduate'},
+    {'label': 'Doctorate (PhD)', 'value': 'Doctorate'},
+    {'label': 'Professional (CA / CS / CMA / etc.)', 'value': 'Professional'},
+    {'label': 'Pursuing (optional – useful for students)', 'value': 'Pursuing'},
+    {'label': 'Other', 'value': 'Other'},
+  ];
+
+  final List<String> _relationshipOptions = [
+    'Spouse',
+    'Son',
+    'Daughter',
+    'Father',
+    'Mother',
+    'Brother',
+    'Sister',
+    'Grandparent',
+    'In-law',
+    'Other Relative',
+    'Non-relative'
+  ];
+
+  final List<String> _religionOptions = [
+    'Hindu',
+    'Muslim',
+    'Christian',
+    'Sikh',
+    'Buddhist',
+    'Jain',
+    'Jewish',
+    'Parsi',
+    'Other'
+  ];
+
   // A helper function for simple validation
   String? _validateRequired(String? value) {
     if (value == null || value.isEmpty) {
@@ -194,23 +268,27 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     return null;
   }
 
-  String? _validateAadhar(String? value) {
-    String? required = _validateRequired(value);
-    if (required != null) {
-      return required;
+  String? _validateAadhar(String? value, {bool isMandatory = true}) {
+    if (isMandatory) {
+      String? required = _validateRequired(value);
+      if (required != null) {
+        return required;
+      }
     }
-    if (value!.length != 12) {
+    if (value != null && value.isNotEmpty && value.length != 12) {
       return 'Aadhar must be 12 digits';
     }
     return null;
   }
 
-  String? _validateMobile(String? value) {
-    String? required = _validateRequired(value);
-    if (required != null) {
-      return required;
+  String? _validateMobile(String? value, {bool isMandatory = true}) {
+    if (isMandatory) {
+      String? required = _validateRequired(value);
+      if (required != null) {
+        return required;
+      }
     }
-    if (value!.length != 10) {
+    if (value != null && value.isNotEmpty && value.length != 10) {
       return 'Mobile must be 10 digits';
     }
     return null;
@@ -348,10 +426,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _disposeMemberControllers(FamilyMember member) {
     // photoUrl is just a string, no controller
     member.nameCtrl.dispose();
-    member.relationshipCtrl.dispose();
     member.ageCtrl.dispose();
-    member.educationCtrl.dispose();
-    member.religionCtrl.dispose();
     member.bplCardCtrl.dispose();
     member.aadharCtrl.dispose();
     member.mobileCtrl.dispose();
@@ -451,7 +526,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
 
   /// Generic photo capture and upload logic.
   /// [onUploadComplete] is a callback that receives the remote URL.
-  Future<void> _captureAndUploadPhoto(Function(String) onUploadComplete) async {
+  Future<void> _captureAndUploadPhoto(Function(String) onImageCaptured) async {
     if (_isUploading) return;
 
     // Navigate to the custom camera capture page
@@ -462,14 +537,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     // User may have cancelled
     if (result == null || result['path'] == null || result['bytes'] == null) return;
 
-    final String photoPath = result['path']+'.jpg';
+    
+    String photoPath = result['path'];
+
     final Uint8List photoBytes = result['bytes'];
+
+    // Update UI immediately with local path
+    onImageCaptured(photoPath);
 
     setState(() => _isUploading = true);
 
     // Show a snackbar to indicate upload is in progress
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Uploading photo...'), duration: Duration(minutes: 2)), // Long duration
+      const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 1)),
     );
 
     final remoteUrl = await _surveyService.uploadDocument(photoBytes, photoPath);
@@ -480,7 +560,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     setState(() => _isUploading = false);
 
     if (remoteUrl != null) {
-      onUploadComplete(remoteUrl);
+      _localToRemoteMap[photoPath] = remoteUrl;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Photo uploaded successfully!'), backgroundColor: Colors.green),
       );
@@ -501,32 +581,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       lat = 21.6701;
       lon = 72.2319;
     } else {
-      bool serviceEnabled;
-      LocationPermission permission;
-
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location services are disabled.')));
+      final position = await LocationService.getPositionWithFallback();
+      if (position == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to get location. Please ensure GPS is enabled.')));
         return;
       }
-
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are denied.')));
-          return;
-        }
-      }
-
-      try {
-        final position = await Geolocator.getCurrentPosition();
-        lat = position.latitude;
-        lon = position.longitude;
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to get location.')));
-        return;
-      }
+      lat = position.latitude;
+      lon = position.longitude;
     }
 
     setState(() {
@@ -621,7 +682,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         for (var memberData in members) {
           final member = FamilyMember();
           member.nameCtrl.text = memberData['name']?.toString() ?? '';
-          member.relationshipCtrl.text = memberData['relationship_with_head']?.toString() ?? '';
+          member.relationship = memberData['relationship_with_head']?.toString();
           // Map API gender ('Male'/'Female') to form value ('M'/'F')
           final apiGender = memberData['gender']?.toString();
           if (apiGender != null) {
@@ -630,12 +691,12 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           }
           member.ageCtrl.text = memberData['age']?.toString() ?? '';
           member.maritalStatus = memberData['marital_status']?.toString();
-          member.religionCtrl.text = memberData['religion']?.toString() ?? '';
+          member.religion = memberData['religion']?.toString().trim();
           member.caste = memberData['caste_category']?.toString();
           member.handicapped = (memberData['is_handicapped'] == true) ? 'Yes' : 'No';
           member.aadharCtrl.text = memberData['aadhar_no']?.toString() ?? '';
           member.mobileCtrl.text = memberData['mobile_no']?.toString() ?? '';
-          member.educationCtrl.text = memberData['education_qualification']?.toString() ?? '';
+          member.education = memberData['education_qualification']?.toString();
           member.studying = (memberData['studying_in_progress'] == true) ? 'Yes' : 'No';
           member.artisanSkillCtrl.text = memberData['artisan_details']?.toString() ?? '';
           member.skillTrainingInterest = (memberData['interested_in_training'] == true) ? 'Yes' : 'No';
@@ -736,8 +797,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _incomeFarmingCtrl.text = income['farming']?.toString() ?? '';
         _incomeJobCtrl.text = income['job']?.toString() ?? '';
         _incomeBusinessCtrl.text = income['business']?.toString() ?? '';
-        _incomeLaborCtrl.text = income['labor']?.toString() ?? '';
-        _incomeHouseworkCtrl.text = income['housework']?.toString() ?? '';
+        _incomeLaborCtrl.text = income['labour']?.toString() ?? income['labor']?.toString() ?? '';
+        _incomeHouseworkCtrl.text = income['house_work']?.toString() ?? income['housework']?.toString() ?? '';
         _incomeOtherCtrl.text = income['other_income']?.toString() ?? '';
         _estimatedAnnualIncomeCtrl.text = income['estimated_annual_income']?.toString() ?? '';
       }
@@ -806,6 +867,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         } else {
             // This case is now handled by the bottom navigation bar's submit button directly.
         }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields correctly.'), backgroundColor: Colors.red),
+      );
     }
   }
   void _onStepCancel() {
@@ -862,25 +927,25 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "lane": _laneCtrl.text,
         "house_no": _houseNoCtrl.text,
       },
-      "members": _familyMembers.map((m) => {
+      "members": await Future.wait(_familyMembers.map((m) async => {
         "name": m.nameCtrl.text,
-        "relationship_with_head": m.relationshipCtrl.text,
+        "relationship_with_head": m.relationship,
         // Map form value ('M'/'F') to API gender ('Male'/'Female')
         "gender": (m.gender == 'M') ? 'Male' : (m.gender == 'F' ? 'Female' : null),
         "age": int.tryParse(m.ageCtrl.text) ?? 0,
         "marital_status": m.maritalStatus,
-        "religion": m.religionCtrl.text, // This was missing from the model
+        "religion": m.religion,
         "caste_category": m.caste,
         "handicapped": m.handicapped == 'Yes',
         "aadhar_no": m.aadharCtrl.text,
         "mobile_no": m.mobileCtrl.text,
-        "education_qualification": m.educationCtrl.text,
+        "education_qualification": m.education,
         "studying_in_progress": m.studying == 'Yes',
         "artisan_details": m.artisanSkillCtrl.text,
         "interested_in_training": m.skillTrainingInterest == 'Yes',
-        "photo_url": m.photoUrl,
+        "photo_url": await _resolveImageUrl(m.photoUrl, forLocalSave: forLocalSave),
         "bpl_card_no": m.bplCardCtrl.text,
-      }).toList(),
+      })),
       "accommodation": {
         "residence_years": int.tryParse(_residenceAgeCtrl.text) ?? 0,
         "authorized": _residenceAuthorized == 'Yes',
@@ -901,7 +966,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "fuel_facility": _residenceFuelFacility,
         "has_solar_energy_facility": _residenceSolarEnergy == 'Yes',
         "documentary_evidence": _residenceDocumentaryEvidence == 'Yes',
-        "photo_house_url": _housePhotoUrl,
+        "photo_house_url": await _resolveImageUrl(_housePhotoUrl, forLocalSave: forLocalSave),
       },
       "holds_land": _landHolds == 'Yes',
       "lands": _landRecords.map((l) => {
@@ -915,29 +980,29 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "land_mortgaged_to": l.landMortgagedToCtrl.text,
         "land_mortgaged_details": l.landMortgagedDetailsCtrl.text,
       }).toList(),
-      "trees": _treeRecords.map((t) => {
+      "trees": await Future.wait(_treeRecords.map((t) async => {
         "name": t.nameCtrl.text,
         "number_of_trees": int.tryParse(t.countCtrl.text) ?? 0,
         "age_of_tree": int.tryParse(t.ageCtrl.text) ?? 0,
-        "tree_photo": t.photoUrl,
-      }).toList(),
-      "assets": _assetRecords.map((a) => {
+        "tree_photo": await _resolveImageUrl(t.photoUrl, forLocalSave: forLocalSave),
+      })),
+      "assets": await Future.wait(_assetRecords.map((a) async => {
         "name": a.nameCtrl.text,
         "count": int.tryParse(a.countCtrl.text) ?? 0,
-        "asset_photo": a.photoUrl,
-      }).toList(),
-      "livestocks": _livestockRecords.map((l) => {
+        "asset_photo": await _resolveImageUrl(a.photoUrl, forLocalSave: forLocalSave),
+      })),
+      "livestocks": await Future.wait(_livestockRecords.map((l) async => {
         "name": l.nameCtrl.text,
         "count": int.tryParse(l.countCtrl.text) ?? 0,
-        "livestock_photo": l.photoUrl,
+        "livestock_photo": await _resolveImageUrl(l.photoUrl, forLocalSave: forLocalSave),
         "cattle_paddy_type": l.cattlePaddyType,
-      }).toList(),
+      })),
       "income": {
         "farming": double.tryParse(_incomeFarmingCtrl.text) ?? 0,
         "job": double.tryParse(_incomeJobCtrl.text) ?? 0,
         "business": double.tryParse(_incomeBusinessCtrl.text) ?? 0,
-        "labor": double.tryParse(_incomeLaborCtrl.text) ?? 0,
-        "housework": double.tryParse(_incomeHouseworkCtrl.text) ?? 0,
+        "labour": double.tryParse(_incomeLaborCtrl.text) ?? 0,
+        "house_work": double.tryParse(_incomeHouseworkCtrl.text) ?? 0,
         "other_income": double.tryParse(_incomeOtherCtrl.text) ?? 0,
         "estimated_annual_income": double.tryParse(_estimatedAnnualIncomeCtrl.text) ?? 0,
       },
@@ -1029,11 +1094,41 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     }
   }
 
+  Widget _buildImagePreview(String? url) {
+    if (url != null) {
+      if (kIsWeb || url.startsWith('http')) {
+        return Image.network(
+          url,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+        );
+      } else {
+        return Image.file(
+          File(url),
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+        );
+      }
+    }
+    return const Icon(Icons.camera_alt);
+  }
+
+  Widget _buildReviewImage(String url, {double? height, BoxFit? fit}) {
+    if (kIsWeb || url.startsWith('http')) {
+      return Image.network(url, height: height, fit: fit, errorBuilder: (c, e, s) => const Icon(Icons.broken_image));
+    }
+    return Image.file(File(url), height: height, fit: fit, errorBuilder: (c, e, s) => const Icon(Icons.broken_image));
+  }
+
   Widget _buildMemberForm(FamilyMember member, int index) {
     // The first member is the Head of Family
     bool isHead = index == 0;
     if (isHead) {
-      member.relationshipCtrl.text = 'Head';
+      member.relationship = 'Head';
     }
 
     return Column(
@@ -1053,7 +1148,28 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ],
           ),
         TextFormField(controller: member.nameCtrl, decoration: InputDecoration(labelText: isHead ? 'Name of Head of Family' : 'Name'), validator: _validateRequired),
-        TextFormField(controller: member.relationshipCtrl, decoration: const InputDecoration(labelText: 'Relationship with Head'), readOnly: isHead, validator: _validateRequired),
+        if (isHead)
+          TextFormField(
+            initialValue: 'Head',
+            decoration: const InputDecoration(labelText: 'Relationship with Head'),
+            readOnly: true,
+          )
+        else
+          DropdownButtonFormField<String>(
+            value: _relationshipOptions.contains(member.relationship) ? member.relationship : null,
+            decoration: const InputDecoration(labelText: 'Relationship with Head'),
+            items: _relationshipOptions
+                .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+            onChanged: (val) => setState(() {
+              member.relationship = val;
+              if (['Daughter', 'Sister', 'Mother'].contains(val)) {
+                member.gender = 'F';
+              } else if (['Son', 'Father', 'Brother'].contains(val)) {
+                member.gender = 'M';
+              }
+            }),
+            validator: _validateRequired,
+          ),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
             value: member.gender,
@@ -1072,7 +1188,15 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           onChanged: (val) => setState(() { member.maritalStatus = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
-        TextFormField(controller: member.religionCtrl, decoration: const InputDecoration(labelText: 'Religion'), validator: _validateRequired),
+        DropdownButtonFormField<String>(
+          value: _religionOptions.contains(member.religion) ? member.religion : null,
+          decoration: const InputDecoration(labelText: 'Religion'),
+          items: _religionOptions
+              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+              .toList(),
+          onChanged: (val) => setState(() { member.religion = val; }),
+          validator: _validateRequired,
+        ),
         DropdownButtonFormField<String>(
           value: member.caste,
           decoration: const InputDecoration(labelText: 'Caste'),
@@ -1089,10 +1213,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ),
         const SizedBox(height: 16),
         if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleLarge),
-        TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: _validateAadhar),
-        TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: _validateMobile),
+        TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
+        TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: (v) => _validateMobile(v, isMandatory: isHead)),
         if (isHead) TextFormField(controller: member.bplCardCtrl, decoration: const InputDecoration(labelText: 'BPL Card No.')),
-        TextFormField(controller: member.educationCtrl, decoration: const InputDecoration(labelText: 'Education Qualification'), validator: _validateRequired),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          value: _educationOptions.any((e) => e['value'] == member.education) ? member.education : null,
+          decoration: const InputDecoration(labelText: 'Education Qualification'),
+          items: _educationOptions.map((opt) {
+            return DropdownMenuItem<String>(value: opt['value'], child: Text(opt['label']!));
+          }).toList(),
+          onChanged: (val) => setState(() { member.education = val; }),
+          validator: _validateRequired,
+        ),
         DropdownButtonFormField<String>(
           value: member.studying,
           decoration: const InputDecoration(labelText: 'Studying in progress?'),
@@ -1135,7 +1268,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         TextFormField(controller: tree.ageCtrl, decoration: const InputDecoration(labelText: 'How old is the tree? (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.camera_alt),
+          leading: _buildImagePreview(tree.photoUrl),
           title: Text(tree.photoUrl != null ? 'Photo Captured' : 'Capture Tree Photo'),
           onTap: () => _captureAndUploadPhoto((url) => setState(() => tree.photoUrl = url)),
           trailing: tree.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1197,7 +1330,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         TextFormField(controller: asset.countCtrl, decoration: const InputDecoration(labelText: 'Count'), keyboardType: TextInputType.number, validator: _validateRequired),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.camera_alt),
+          leading: _buildImagePreview(asset.photoUrl),
           title: Text(asset.photoUrl != null ? 'Photo Captured' : 'Capture Asset Photo'),
           onTap: () => _captureAndUploadPhoto((url) => setState(() => asset.photoUrl = url)),
           trailing: asset.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1224,7 +1357,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _buildDropdown('Cattle Paddy Type', livestock.cattlePaddyType, ['Raw', 'Ripe', 'N/A'], (val) => setState(() { livestock.cattlePaddyType = val; })),
         ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.camera_alt),
+            leading: _buildImagePreview(livestock.photoUrl),
             title: Text(livestock.photoUrl != null ? 'Photo Captured' : 'Capture Livestock Photo'),
             onTap: () => _captureAndUploadPhoto((url) => setState(() => livestock.photoUrl = url)),
             trailing: livestock.photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null),
@@ -1273,7 +1406,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             const SizedBox(height: 16),
             Text('Photo & Document Capture', style: Theme.of(context).textTheme.titleLarge),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: _buildImagePreview(_familyMembers[0].photoUrl),
               title: Text(_familyMembers[0].photoUrl != null ? 'Photo Captured' : 'Capture photo of person'),
               onTap: () => _captureAndUploadPhoto((url) => setState(() => _familyMembers[0].photoUrl = url)),
               trailing: _familyMembers[0].photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1319,7 +1452,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             Text('Residence Document Capture', style: Theme.of(context).textTheme.titleLarge),
             _buildDropdown('Is there documentary evidence?', _residenceDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { _residenceDocumentaryEvidence = val; })),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: _buildImagePreview(_housePhotoUrl),
               title: Text(_housePhotoUrl != null ? 'Photo Captured' : 'Capture House/Document Photo'),
               onTap: () => _captureAndUploadPhoto((url) => setState(() => _housePhotoUrl = url)),
               trailing: _housePhotoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
@@ -1429,7 +1562,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.network(_signatureUrl!, height: 150, fit: BoxFit.contain),
+                  _buildReviewImage(_signatureUrl!, height: 150, fit: BoxFit.contain),
                   TextButton(onPressed: () => setState(() => _signatureUrl = null), child: const Text('Clear and Sign Again')),
                 ],
               )
@@ -1469,9 +1602,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   if (_familyMembers[i].photoUrl != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Image.network(_familyMembers[i].photoUrl!, height: 100),
+                      child: _buildReviewImage(_familyMembers[i].photoUrl!, height: 100),
                     ),
-                   _buildReviewRow('Relationship', _familyMembers[i].relationshipCtrl.text),
+                   _buildReviewRow('Relationship', _familyMembers[i].relationship),
                   _buildReviewRow('Gender', _familyMembers[i].gender),
                   _buildReviewRow('Age', _familyMembers[i].ageCtrl.text),
                   _buildReviewRow('Marital Status', _familyMembers[i].maritalStatus),
@@ -1491,7 +1624,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             if (_housePhotoUrl != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Image.network(_housePhotoUrl!, height: 100),
+                child: _buildReviewImage(_housePhotoUrl!, height: 100),
               ),
              _buildReviewRow('Electricity', _residenceElectricity),
             _buildReviewRow('House Photo', _housePhotoUrl != null ? 'Captured' : 'Not Captured'),
@@ -1511,7 +1644,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildReviewRow(tree.nameCtrl.text, 'Count: ${tree.countCtrl.text}'),
-                    if (tree.photoUrl != null) Image.network(tree.photoUrl!, height: 80),
+                    if (tree.photoUrl != null) _buildReviewImage(tree.photoUrl!, height: 80),
                   ],
                 ),
               ),
@@ -1525,14 +1658,14 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     _buildReviewRow(asset.nameCtrl.text, 'Count: ${asset.countCtrl.text}'),
-                    if (asset.photoUrl != null) Image.network(asset.photoUrl!, height: 80),
+                    if (asset.photoUrl != null) _buildReviewImage(asset.photoUrl!, height: 80),
                   ])),
 
             _buildReviewRow('Livestock Records', _livestockRecords.isNotEmpty ? '${_livestockRecords.length} record(s)' : 'None'),
             for (var livestock in _livestockRecords)
               Padding(padding: const EdgeInsets.only(left: 16.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _buildReviewRow(livestock.nameCtrl.text, 'Count: ${livestock.countCtrl.text}'),
-                if (livestock.photoUrl != null) Image.network(livestock.photoUrl!, height: 80),
+                if (livestock.photoUrl != null) _buildReviewImage(livestock.photoUrl!, height: 80),
               ])),
 
 
@@ -1550,7 +1683,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             if (_signatureUrl != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Image.network(_signatureUrl!, height: 50, fit: BoxFit.contain),
+                child: _buildReviewImage(_signatureUrl!, height: 50, fit: BoxFit.contain),
               )
             else if (_signatureController.isNotEmpty)
               Padding(
