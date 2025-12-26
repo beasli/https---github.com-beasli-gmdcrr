@@ -102,18 +102,24 @@ class FamilySurveyService {
   ///
   /// Takes a [villageId].
   /// Returns a list of survey data on success, or an empty list on failure.
-  Future<List<dynamic>> fetchUserSurveysByVillage(int villageId) async {
+  Future<List<dynamic>> fetchUserSurveysByVillage(int villageId, {String? search}) async {
     try {
       final headers = <String, dynamic>{'accept': '*/*'};
   
+      final queryParams = {
+        'villageIds': villageId,
+        'page': 1,
+        'limit': 100, // Fetching up to 100 surveys, adjust if pagination is needed
+        'sort-by': 'Newest First',
+      };
+
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
+      }
+
       final response = await _dio.get(
         '$_baseUrl/family-survey/user',
-        queryParameters: {
-          'villageIds': villageId,
-          'page': 1,
-          'limit': 100, // Fetching up to 100 surveys, adjust if pagination is needed
-          'sort-by': 'Newest First',
-        },
+        queryParameters: queryParams,
         options: Options(headers: headers),
       );
 

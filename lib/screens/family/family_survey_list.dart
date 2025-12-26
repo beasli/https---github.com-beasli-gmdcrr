@@ -25,6 +25,9 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
   Future<List<dynamic>>? _localSurveysFuture;
   String _loadingMessage = 'Determining your location...';
   String? _villageName;
+  int? _currentVillageId;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -37,13 +40,14 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
   @override
   void dispose() {
     _tabController?.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   /// Fetches locally saved surveys and formats them for the list.
-  Future<List<dynamic>> _fetchLocalSurveys() async {
+  Future<List<dynamic>> _fetchLocalSurveys({String? search}) async {
     final localMaps = await _localDb.pendingFamilySurveys();
-    return localMaps.map((map) {
+    var list = localMaps.map((map) {
       final surveyPayload = jsonDecode(map['payload'] as String);
       final localId = map['id'] as int?; // Use the ID from the local DB row
       final headName = surveyPayload['members']?[0]?['name'] ?? 'N/A';
@@ -58,6 +62,17 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
         'survey_data': surveyPayload, // Pass the full data for opening the form
       };
     }).toList();
+
+    if (search != null && search.isNotEmpty) {
+      final query = search.toLowerCase();
+      list = list.where((s) {
+        final headName = (s['head_name'] as String? ?? '').toLowerCase();
+        final houseNo = (s['house_no'] as String? ?? '').toLowerCase();
+        final id = s['id'].toString();
+        return headName.contains(query) || houseNo.contains(query) || id.contains(query);
+      }).toList();
+    }
+    return list;
   }
 
   /// Determines location, finds the nearby village, and then fetches surveys.
@@ -96,10 +111,8 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
       final villageName = village['name'] as String;
       setState(() {
         _villageName = villageName;
-        _loadingMessage = 'Loading surveys for $_villageName...';
-        // Fetch both local and remote surveys
-        _remoteSurveysFuture = _surveyService.fetchUserSurveysByVillage(villageId);
-        _localSurveysFuture = _fetchLocalSurveys();
+        _currentVillageId = villageId;
+        _loadSurveys();
       });
     } else if (mounted) {
       setState(() {
@@ -110,6 +123,36 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
     }
   }
 
+  void _loadSurveys() {
+    if (_currentVillageId == null) return;
+    setState(() {
+      _loadingMessage = 'Loading surveys for $_villageName...';
+      _remoteSurveysFuture = _surveyService.fetchUserSurveysByVillage(_currentVillageId!, search: _searchController.text);
+      _localSurveysFuture = _fetchLocalSurveys(search: _searchController.text);
+    });
+  }
+
+  void _startSearch() {
+    setState(() {
+      _isSearching = true;
+    });
+  }
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchController.clear();
+      _loadSurveys();
+    });
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _searchController.clear();
+      _loadSurveys();
+    });
+  }
+
   /// Refreshes the data by re-running the initialization process.
   void _refreshData() {
     setState(() {
@@ -117,6 +160,7 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
       _localSurveysFuture = null;
       _loadingMessage = 'Determining your location...';
       _villageName = null;
+      _currentVillageId = null;
     });
     _initializeAndLoadSurveys();
   }
@@ -260,23 +304,37 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_villageName ?? 'Family Surveys'),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search by Name, House No, ID...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.black54),
+                ),
+                style: const TextStyle(color: Colors.black),
+                onSubmitted: (_) => _loadSurveys(),
+              )
+            : Text(_villageName ?? 'Family Surveys'),
+        leading: _isSearching
+            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _stopSearch)
+            : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search functionality.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Search not yet implemented.')),
-              );
-            },
-            tooltip: 'Search Surveys',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshData,
-            tooltip: 'Refresh List',
-          ),
+          if (_isSearching)
+            IconButton(icon: const Icon(Icons.clear), onPressed: _clearSearch)
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: _startSearch,
+              tooltip: 'Search Surveys',
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshData,
+              tooltip: 'Refresh List',
+            ),
+          ]
         ],
         bottom: TabBar(
           controller: _tabController,
