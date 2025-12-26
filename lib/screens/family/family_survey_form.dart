@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:typed_data';
 import 'dart:async';
@@ -196,17 +197,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     if (url.startsWith('http')) return url;
     if (_localToRemoteMap.containsKey(url)) return _localToRemoteMap[url];
 
-    final file = File(url);
-    if (await file.exists()) {
-      try {
-        final bytes = await file.readAsBytes();
-        final remote = await _surveyService.uploadDocument(bytes, url);
-        if (remote != null) {
-          _localToRemoteMap[url] = remote;
-          return remote;
+    if (!kIsWeb) {
+      final file = File(url);
+      if (await file.exists()) {
+        try {
+          final bytes = await file.readAsBytes();
+          final remote = await _surveyService.uploadDocument(bytes, url);
+          if (remote != null) {
+            _localToRemoteMap[url] = remote;
+            return remote;
+          }
+        } catch (e) {
+          debugPrint('Error uploading image: $e');
         }
-      } catch (e) {
-        debugPrint('Error uploading image: $e');
       }
     }
     return null;
@@ -1093,7 +1096,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
 
   Widget _buildImagePreview(String? url) {
     if (url != null) {
-      if (url.startsWith('http')) {
+      if (kIsWeb || url.startsWith('http')) {
         return Image.network(
           url,
           width: 50,
@@ -1115,7 +1118,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   }
 
   Widget _buildReviewImage(String url, {double? height, BoxFit? fit}) {
-    if (url.startsWith('http')) {
+    if (kIsWeb || url.startsWith('http')) {
       return Image.network(url, height: height, fit: fit, errorBuilder: (c, e, s) => const Icon(Icons.broken_image));
     }
     return Image.file(File(url), height: height, fit: fit, errorBuilder: (c, e, s) => const Icon(Icons.broken_image));

@@ -10,6 +10,7 @@ class LocalDb {
 
   Database? _db;
   final List<Map<String, Object?>> _inMemory = [];
+  final List<Map<String, Object?>> _familyInMemory = [];
 
   Future<Database> get db async {
     if (kIsWeb) {
@@ -132,6 +133,16 @@ class LocalDb {
 
   /// Inserts or updates a family survey draft.
   Future<int> insertOrUpdateFamilySurvey(Map<String, dynamic> row) async {
+    if (kIsWeb) {
+      final id = row['id'] as int;
+      final idx = _familyInMemory.indexWhere((r) => r['id'] == id);
+      if (idx >= 0) {
+        _familyInMemory[idx] = Map<String, Object?>.from(row);
+      } else {
+        _familyInMemory.add(Map<String, Object?>.from(row));
+      }
+      return id;
+    }
     final d = await db;
     return d.insert(
       'family_survey_entries',
@@ -142,6 +153,15 @@ class LocalDb {
 
   /// Fetches all pending family survey drafts.
   Future<List<Map<String, Object?>>> pendingFamilySurveys() async {
+    if (kIsWeb) {
+      final list = List<Map<String, Object?>>.from(_familyInMemory);
+      list.sort((a, b) {
+        final aTime = a['updatedAt'] as String? ?? '';
+        final bTime = b['updatedAt'] as String? ?? '';
+        return bTime.compareTo(aTime);
+      });
+      return list;
+    }
     final d = await db;
     return d.query('family_survey_entries', orderBy: 'updatedAt DESC');
   }
@@ -149,6 +169,14 @@ class LocalDb {
   /// Deletes a family survey draft by its ID.
   /// The ID can be the temporary negative ID or the server ID.
   Future<int> deleteFamilySurvey(int id) async {
+    if (kIsWeb) {
+      final idx = _familyInMemory.indexWhere((r) => r['id'] == id);
+      if (idx >= 0) {
+        _familyInMemory.removeAt(idx);
+        return 1;
+      }
+      return 0;
+    }
     final d = await db;
     return d.delete('family_survey_entries', where: 'id = ?', whereArgs: [id]);
   }
