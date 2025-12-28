@@ -19,6 +19,7 @@ import '../../core/config/env.dart';
 class FamilyMember {
   // Using unique keys for each member's form to handle state correctly in a list.
   final UniqueKey key = UniqueKey();
+  final GlobalKey reviewKey = GlobalKey();
   TextEditingController nameCtrl = TextEditingController();
   String? relationship;
   String? gender;
@@ -104,6 +105,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   final _step3Key = GlobalKey<FormState>();
   final _step4Key = GlobalKey<FormState>();
   final _step5Key = GlobalKey<FormState>();
+  final List<GlobalKey> _stepContentKeys = List.generate(6, (index) => GlobalKey());
+  final List<GlobalKey> _stepTitleKeys = List.generate(6, (index) => GlobalKey());
 
   // Step 1: Identity & Family
   // Head of Family has some unique fields
@@ -933,7 +936,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "relationship_with_head": m.relationship,
         // Map form value ('M'/'F') to API gender ('Male'/'Female')
         "gender": (m.gender == 'M') ? 'Male' : (m.gender == 'F' ? 'Female' : null),
-        "age": int.tryParse(m.ageCtrl.text) ?? 0,
+        "age": int.tryParse(m.ageCtrl.text),
         "marital_status": m.maritalStatus,
         "religion": m.religion,
         "caste_category": m.caste,
@@ -948,14 +951,14 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "bpl_card_no": m.bplCardCtrl.text,
       })),
       "accommodation": {
-        "residence_years": int.tryParse(_residenceAgeCtrl.text) ?? 0,
+        "residence_years": int.tryParse(_residenceAgeCtrl.text),
         "authorized": _residenceAuthorized == 'Yes',
         "ownership": _residenceOwnerTenant,
-        "total_rooms": int.tryParse(_residenceTotalRoomsCtrl.text) ?? 0,
+        "total_rooms": int.tryParse(_residenceTotalRoomsCtrl.text),
         "house_type": _residencePakkaKachha,
         "roof_type": _residenceRoofType,
-        "land_area": double.tryParse(_residencePlotAreaCtrl.text) ?? 0.0,
-        "total_construction_area": double.tryParse(_residenceConstructionAreaCtrl.text) ?? 0.0,
+        "land_area": double.tryParse(_residencePlotAreaCtrl.text),
+        "total_construction_area": double.tryParse(_residenceConstructionAreaCtrl.text),
         "interested_in_rr_colony": _residenceRrColonyInterest == 'Yes',
         "interested_in_own_life": _residenceLiveOwnLifeInterest == 'Yes',
         "has_well_or_borewell": _residenceWellBorewell == 'Yes',
@@ -973,9 +976,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       "lands": _landRecords.map((l) => {
         "khata_no": l.khataNoCtrl.text,
         "land_type": l.landType,
-        "total_area": double.tryParse(l.totalAreaCtrl.text) ?? 0,
-        "acquired_area": double.tryParse(l.acquiredAreaCtrl.text) ?? 0,
-        "remaining_area": double.tryParse(l.remainingAreaCtrl.text) ?? 0,
+        "total_area": double.tryParse(l.totalAreaCtrl.text),
+        "acquired_area": double.tryParse(l.acquiredAreaCtrl.text),
+        "remaining_area": double.tryParse(l.remainingAreaCtrl.text),
         "has_documentary_evidence": l.hasDocumentaryEvidence == 'Yes',
         "is_land_mortgaged": l.isLandMortgaged == 'Yes',
         "land_mortgaged_to": l.landMortgagedToCtrl.text,
@@ -983,49 +986,49 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       }).toList(),
       "trees": await Future.wait(_treeRecords.map((t) async => {
         "name": t.nameCtrl.text,
-        "number_of_trees": int.tryParse(t.countCtrl.text) ?? 0,
-        "age_of_tree": int.tryParse(t.ageCtrl.text) ?? 0,
+        "number_of_trees": int.tryParse(t.countCtrl.text),
+        "age_of_tree": int.tryParse(t.ageCtrl.text),
         "tree_photo": await _resolveImageUrl(t.photoUrl, forLocalSave: forLocalSave),
       })),
       "assets": await Future.wait(_assetRecords.map((a) async => {
         "name": a.nameCtrl.text,
-        "count": int.tryParse(a.countCtrl.text) ?? 0,
+        "count": int.tryParse(a.countCtrl.text),
         "asset_photo": await _resolveImageUrl(a.photoUrl, forLocalSave: forLocalSave),
       })),
       "livestocks": await Future.wait(_livestockRecords.map((l) async => {
         "name": l.nameCtrl.text,
-        "count": int.tryParse(l.countCtrl.text) ?? 0,
+        "count": int.tryParse(l.countCtrl.text),
         "livestock_photo": await _resolveImageUrl(l.photoUrl, forLocalSave: forLocalSave),
         "cattle_paddy_type": l.cattlePaddyType,
       })),
       "income": {
-        "farming": double.tryParse(_incomeFarmingCtrl.text) ?? 0,
-        "job": double.tryParse(_incomeJobCtrl.text) ?? 0,
-        "business": double.tryParse(_incomeBusinessCtrl.text) ?? 0,
-        "labour": double.tryParse(_incomeLaborCtrl.text) ?? 0,
-        "house_work": double.tryParse(_incomeHouseworkCtrl.text) ?? 0,
-        "other_income": double.tryParse(_incomeOtherCtrl.text) ?? 0,
-        "estimated_annual_income": double.tryParse(_estimatedAnnualIncomeCtrl.text) ?? 0,
+        "farming": double.tryParse(_incomeFarmingCtrl.text),
+        "job": double.tryParse(_incomeJobCtrl.text),
+        "business": double.tryParse(_incomeBusinessCtrl.text),
+        "labour": double.tryParse(_incomeLaborCtrl.text),
+        "house_work": double.tryParse(_incomeHouseworkCtrl.text),
+        "other_income": double.tryParse(_incomeOtherCtrl.text),
+        "estimated_annual_income": double.tryParse(_estimatedAnnualIncomeCtrl.text),
       },
       "expense": {
-        "agriculture": double.tryParse(_expenseAgricultureCtrl.text) ?? 0,
-        "house": double.tryParse(_expenseHouseCtrl.text) ?? 0,
-        "food": double.tryParse(_expenseFoodCtrl.text) ?? 0,
-        "fuel": double.tryParse(_expenseFuelCtrl.text) ?? 0,
-        "electricity": double.tryParse(_expenseElectricityCtrl.text) ?? 0,
-        "clothes": double.tryParse(_expenseClothsCtrl.text) ?? 0,
-        "health": double.tryParse(_expenseHealthCtrl.text) ?? 0,
-        "education": double.tryParse(_expenseEducationCtrl.text) ?? 0,
-        "transportation": double.tryParse(_expenseTransportationCtrl.text) ?? 0,
-        "communication": double.tryParse(_expenseCommunicationCtrl.text) ?? 0,
-        "entertainment": double.tryParse(_expenseCinemaHotelCtrl.text) ?? 0,
-        "taxes": double.tryParse(_expenseTaxesCtrl.text) ?? 0,
-        "others": double.tryParse(_expenseOthersCtrl.text) ?? 0,
+        "agriculture": double.tryParse(_expenseAgricultureCtrl.text),
+        "house": double.tryParse(_expenseHouseCtrl.text),
+        "food": double.tryParse(_expenseFoodCtrl.text),
+        "fuel": double.tryParse(_expenseFuelCtrl.text),
+        "electricity": double.tryParse(_expenseElectricityCtrl.text),
+        "clothes": double.tryParse(_expenseClothsCtrl.text),
+        "health": double.tryParse(_expenseHealthCtrl.text),
+        "education": double.tryParse(_expenseEducationCtrl.text),
+        "transportation": double.tryParse(_expenseTransportationCtrl.text),
+        "communication": double.tryParse(_expenseCommunicationCtrl.text),
+        "entertainment": double.tryParse(_expenseCinemaHotelCtrl.text),
+        "taxes": double.tryParse(_expenseTaxesCtrl.text),
+        "others": double.tryParse(_expenseOthersCtrl.text),
       },
       "loan": {
         "has_loan": _loanTaken == 'Yes',
-        "loan_amount": double.tryParse(_loanAmountCtrl.text) ?? 0,
-        "tenure_years": double.tryParse(_loanTenureYearsCtrl.text) ?? 0,
+        "loan_amount": double.tryParse(_loanAmountCtrl.text),
+        "tenure_years": double.tryParse(_loanTenureYearsCtrl.text),
         "loan_source": _loanObtainedFromCtrl.text,
         "loan_purpose": _loanPurposeCtrl.text,
       },
@@ -1428,10 +1431,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   List<Step> _getSteps() {
     return [
       Step(
-        title: const Text('1. Identity & Family'),
+        title: Container(key: _stepTitleKeys[0], child: const Text('1. Identity & Family')),
         content: Form(
           key: _step1Key,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(key: _stepContentKeys[0], crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Head of Family Details', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             TextFormField(controller: _familyNoCtrl, decoration: const InputDecoration(labelText: 'Family No.'), readOnly: true),
@@ -1463,10 +1466,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 0 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: const Text('2. Residence & Amenities'),
+        title: Container(key: _stepTitleKeys[1], child: const Text('2. Residence & Amenities')),
         content: Form(
           key: _step2Key,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(key: _stepContentKeys[1], crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Residence Details - Part 1', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             TextFormField(controller: _residenceAgeCtrl, decoration: const InputDecoration(labelText: 'Residence Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
@@ -1525,10 +1528,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 1 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: const Text('3. Land & Tree Assets'),
+        title: Container(key: _stepTitleKeys[2], child: const Text('3. Land & Tree Assets')),
         content: Form(
           key: _step3Key,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(key: _stepContentKeys[2], crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Land Ownership Details', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             _buildDropdown('Does the family hold any land?', _landHolds, ['Yes', 'No'], (val) => setState(() { _landHolds = val; })),
@@ -1551,10 +1554,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 2 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: const Text('4. Income & Other Assets'),
+        title: Container(key: _stepTitleKeys[3], child: const Text('4. Income & Other Assets')),
         content: Form(
           key: _step4Key, 
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(key: _stepContentKeys[3], crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Annual Income Sources', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             TextFormField(controller: _incomeFarmingCtrl, decoration: const InputDecoration(labelText: 'Farming'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
@@ -1591,10 +1594,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 3 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: const Text('5. Finance & Documents'),
+        title: Container(key: _stepTitleKeys[4], child: const Text('5. Finance & Documents')),
         content: Form(
           key: _step5Key,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(key: _stepContentKeys[4], crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Annual Expenses', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             TextFormField(controller: _expenseAgricultureCtrl, decoration: const InputDecoration(labelText: 'Agriculture'), keyboardType: TextInputType.number, validator: _validateRequired),
@@ -1671,8 +1674,9 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 4 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: const Text('6. Review & Submit'),
+        title: Container(key: _stepTitleKeys[5], child: const Text('6. Review & Submit')),
         content: Column(
+          key: _stepContentKeys[5],
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('Review Complete', style: Theme.of(context).textTheme.titleLarge),
@@ -1688,6 +1692,17 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildReviewRow('House No.', _houseNoCtrl.text),
             for (var i = 0; i < _familyMembers.length; i++)
               ExpansionTile(
+                key: _familyMembers[i].reviewKey,
+                onExpansionChanged: (expanded) {
+                  if (expanded) {
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (mounted && _familyMembers[i].reviewKey.currentContext != null) {
+                        Scrollable.ensureVisible(_familyMembers[i].reviewKey.currentContext!,
+                            duration: const Duration(milliseconds: 300), alignment: 0.0);
+                      }
+                    });
+                  }
+                },
                 title: Text(i == 0 ? 'Head of Family' : 'Family Member ${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 children: [
                   _buildReviewRow('Name', _familyMembers[i].nameCtrl.text),
@@ -1885,7 +1900,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                 currentStep: _currentStep,
                 onStepContinue: _onStepContinue,
                 onStepCancel: _onStepCancel,
-                onStepTapped: (step) => setState(() => _currentStep = step),
+                onStepTapped: (step) {
+                  setState(() => _currentStep = step);
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    if (mounted && _stepTitleKeys[step].currentContext != null) {
+                      Scrollable.ensureVisible(
+                        _stepTitleKeys[step].currentContext!,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        alignment: 0.0,
+                      );
+                    }
+                  });
+                },
                 steps: _getSteps(),
                 controlsBuilder: (BuildContext context, ControlsDetails details) {
                   // This builder is intentionally left empty to hide the default

@@ -453,9 +453,19 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _handleSyncManually,
-                    child: const Text('Sync Manually'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () => setState(() => _isSyncing = false),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: _handleSyncManually,
+                        child: const Text('Sync Manually'),
+                      ),
+                    ],
                   ),
                 ],
               ],

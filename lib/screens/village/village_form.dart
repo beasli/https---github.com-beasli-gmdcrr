@@ -27,6 +27,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
   bool _isInitializing = true;
   String? _processingAction; // null, 'draft', or 'submit'
   List<Map<String, dynamic>> _remoteMedia = [];
+  final List<GlobalKey> _stepContentKeys = List.generate(6, (index) => GlobalKey());
+  final List<GlobalKey> _stepTitleKeys = List.generate(6, (index) => GlobalKey());
 
   // Validation
   final Map<String, String?> _errors = {};
@@ -281,6 +283,10 @@ class _VillageFormPageState extends State<VillageFormPage> {
   }
 
   void _computeSocialTotal() {
+    if (_familiesGeneralCtrl.text.isEmpty && _familiesOBCCtrl.text.isEmpty && _familiesSCCtrl.text.isEmpty && _familiesSTCtrl.text.isEmpty) {
+      _familiesSocialTotalCtrl.text = '';
+      return;
+    }
     final g = int.tryParse(_familiesGeneralCtrl.text) ?? 0;
     final o = int.tryParse(_familiesOBCCtrl.text) ?? 0;
     final s = int.tryParse(_familiesSCCtrl.text) ?? 0;
@@ -290,6 +296,10 @@ class _VillageFormPageState extends State<VillageFormPage> {
   }
 
   void _computeTotalArea() {
+    if (_agriLandCtrl.text.isEmpty && _irrigatedCtrl.text.isEmpty && _unirrigatedCtrl.text.isEmpty && _residentialCtrl.text.isEmpty && _waterCtrl.text.isEmpty && _stonyCtrl.text.isEmpty) {
+      _totalAreaCtrl.text = '';
+      return;
+    }
     final a = double.tryParse(_agriLandCtrl.text) ?? 0;
     final i = double.tryParse(_irrigatedCtrl.text) ?? 0;
     final u = double.tryParse(_unirrigatedCtrl.text) ?? 0;
@@ -946,8 +956,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
     final steps = <Step>[
       Step(
-        title: const Text('General Identification'),
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        title: Container(key: _stepTitleKeys[0], child: const Text('General Identification')),
+        content: Column(key: _stepContentKeys[0], crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 8),
           TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village name'), readOnly: true),
           const SizedBox(height: 12),
@@ -962,8 +972,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 0,
       ),
       Step(
-        title: const Text('Village Area Details'),
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        title: Container(key: _stepTitleKeys[1], child: const Text('Village Area Details')),
+        content: Column(key: _stepContentKeys[1], crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 8),
           TextFormField(controller: _agriLandCtrl, decoration: InputDecoration(labelText: 'Agricultural Land Area', errorText: _errors['agriLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 12),
@@ -982,8 +992,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 1,
       ),
       Step(
-        title: const Text('Family Demographics'),
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        title: Container(key: _stepTitleKeys[2], child: const Text('Family Demographics')),
+        content: Column(key: _stepContentKeys[2], crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 2), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('3.1. Families by Social Group', style: TextStyle(fontWeight: FontWeight.bold)))),
           const SizedBox(height: 12),
           // Families by social group
@@ -1019,8 +1029,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 2,
       ),
       Step(
-        title: const Text('Connectivity'),
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        title: Container(key: _stepTitleKeys[3], child: const Text('Connectivity')),
+        content: Column(key: _stepContentKeys[3], crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.1. Connectivity Distance (Detail & Distance in Km)', style: TextStyle(fontWeight: FontWeight.bold)))),
           const SizedBox(height: 12),
           TextFormField(controller: _nearestCity, decoration: InputDecoration(labelText: 'Nearest City *', hintText: 'City Name', errorText: _errors['nearestCity'])),
@@ -1050,8 +1060,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 3,
       ),
       Step(
-        title: const Text('Infrastructure & Utilities'),
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        title: Container(key: _stepTitleKeys[4], child: const Text('Infrastructure & Utilities')),
+        content: Column(key: _stepContentKeys[4], crossAxisAlignment: CrossAxisAlignment.start, children: [
           // 5.1 Roads, Water & Utilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasAsphaltRoad'] != null || _errors['hasRawRoad'] != null || _errors['hasWaterSystem'] != null || _errors['hasDrainage'] != null || _errors['hasElectricity'] != null || _errors['hasWasteDisposal'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Approach Asphalt Road *', hasAsphaltRoad, (val) => setState(() => hasAsphaltRoad = val), errorText: _errors['hasAsphaltRoad']),
@@ -1282,8 +1292,8 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 4,
       ),
       Step(
-        title: const Text('Attachments & GPS'),
-        content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        title: Container(key: _stepTitleKeys[5], child: const Text('Attachments & GPS')),
+        content: Column(key: _stepContentKeys[5], crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 8),
           TextFormField(decoration: const InputDecoration(labelText: 'GPS Location'), readOnly: true, initialValue: _gpsLocation ?? ''),
           const SizedBox(height: 8),
@@ -1385,7 +1395,19 @@ class _VillageFormPageState extends State<VillageFormPage> {
         currentStep: _currentStep,
         onStepContinue: null,
         onStepCancel: null,
-        onStepTapped: (i) { setState(() => _currentStep = i); },
+        onStepTapped: (i) {
+          setState(() => _currentStep = i);
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted && _stepTitleKeys[i].currentContext != null) {
+              Scrollable.ensureVisible(
+                _stepTitleKeys[i].currentContext!,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                alignment: 0.0,
+              );
+            }
+          });
+        },
         controlsBuilder: (context, details) => const SizedBox.shrink(),
         steps: steps,
       ),

@@ -117,10 +117,30 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
       });
     } else if (mounted) {
       setState(() {
-        _loadingMessage = 'Could not find a nearby village.\nPlease try refreshing.';
-        _remoteSurveysFuture = Future.value([]); // Set to empty to stop loading
+        _loadingMessage = 'No village found';
+        _remoteSurveysFuture = Future.value([]);
         _localSurveysFuture = Future.value([]);
       });
+      await showGeneralDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        barrierLabel: 'Dismiss',
+        transitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (ctx, animation, secondaryAnimation) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: AlertDialog(
+            title: const Text('Village not found'),
+            content: const Text('No village found near you'),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK')),
+            ],
+          ),
+        ),
+        transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      );
+      if (mounted) Navigator.of(context).pop();
     }
   }
 
