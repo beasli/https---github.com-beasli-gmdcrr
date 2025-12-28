@@ -948,10 +948,15 @@ class _VillageFormPageState extends State<VillageFormPage> {
       Step(
         title: const Text('General Identification'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(height: 8),
           TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village name'), readOnly: true),
+          const SizedBox(height: 12),
           TextFormField(controller: _gpCtrl, decoration: InputDecoration(labelText: 'Gram Panchayat', errorText: _errors['gramPanchayat']), readOnly: true),
+          const SizedBox(height: 12),
           TextFormField(controller: _talukaCtrl, decoration: const InputDecoration(labelText: 'Taluka'), readOnly: true),
+          const SizedBox(height: 12),
           TextFormField(controller: _districtCtrl, decoration: const InputDecoration(labelText: 'District'), readOnly: true),
+          const SizedBox(height: 12),
           TextFormField(controller: _totalPopulationCtrl, decoration: InputDecoration(labelText: 'Population', errorText: _errors['totalPopulation']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
         ]),
         isActive: _currentStep == 0,
@@ -959,13 +964,19 @@ class _VillageFormPageState extends State<VillageFormPage> {
       Step(
         title: const Text('Village Area Details'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          TextFormField(controller: _agriLandCtrl, decoration: InputDecoration(labelText: 'Agricultural Land Area', errorText: _errors['agriLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _irrigatedCtrl, decoration: InputDecoration(labelText: 'Irrigated Land Area', errorText: _errors['irrigatedLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _unirrigatedCtrl, decoration: InputDecoration(labelText: 'Unirrigated Land Area', errorText: _errors['unirrigatedLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _residentialCtrl, decoration: InputDecoration(labelText: 'Residential Land Area', errorText: _errors['residentialLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _waterCtrl, decoration: InputDecoration(labelText: 'Area under Water', errorText: _errors['waterArea']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-          TextFormField(controller: _stonyCtrl, decoration: InputDecoration(labelText: 'Stony Soil Area', errorText: _errors['stonyArea']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
           const SizedBox(height: 8),
+          TextFormField(controller: _agriLandCtrl, decoration: InputDecoration(labelText: 'Agricultural Land Area', errorText: _errors['agriLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          const SizedBox(height: 12),
+          TextFormField(controller: _irrigatedCtrl, decoration: InputDecoration(labelText: 'Irrigated Land Area', errorText: _errors['irrigatedLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          const SizedBox(height: 12),
+          TextFormField(controller: _unirrigatedCtrl, decoration: InputDecoration(labelText: 'Unirrigated Land Area', errorText: _errors['unirrigatedLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          const SizedBox(height: 12),
+          TextFormField(controller: _residentialCtrl, decoration: InputDecoration(labelText: 'Residential Land Area', errorText: _errors['residentialLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          const SizedBox(height: 12),
+          TextFormField(controller: _waterCtrl, decoration: InputDecoration(labelText: 'Area under Water', errorText: _errors['waterArea']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          const SizedBox(height: 12),
+          TextFormField(controller: _stonyCtrl, decoration: InputDecoration(labelText: 'Stony Soil Area', errorText: _errors['stonyArea']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+          const SizedBox(height: 12),
           TextFormField(controller: _totalAreaCtrl, decoration: const InputDecoration(labelText: 'Total Area'), readOnly: true),
         ]),
         isActive: _currentStep == 1,
@@ -974,28 +985,35 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('Family Demographics'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 2), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('3.1. Families by Social Group', style: TextStyle(fontWeight: FontWeight.bold)))),
+          const SizedBox(height: 12),
           // Families by social group
           Row(children: [
             Expanded(child: TextFormField(controller: _familiesGeneralCtrl, decoration: InputDecoration(labelText: 'General', errorText: _errors['generalFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
             const SizedBox(width: 8),
             Expanded(child: TextFormField(controller: _familiesOBCCtrl, decoration: InputDecoration(labelText: 'OBC', errorText: _errors['obcFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(children: [
             Expanded(child: TextFormField(controller: _familiesSCCtrl, decoration: InputDecoration(labelText: 'SC', errorText: _errors['scFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
             const SizedBox(width: 8),
             Expanded(child: TextFormField(controller: _familiesSTCtrl, decoration: InputDecoration(labelText: 'ST', errorText: _errors['stFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
           ]),
-          const SizedBox(height: 8),
-          TextFormField(controller: _familiesSocialTotalCtrl, decoration: const InputDecoration(labelText: 'Total (social groups)'), readOnly: true),
           const SizedBox(height: 12),
+          TextFormField(controller: _familiesSocialTotalCtrl, decoration: const InputDecoration(labelText: 'Total (social groups)'), readOnly: true),
+          const SizedBox(height: 24),
           InkWell(onTap: () => setState(() => _currentStep = 2), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('3.2. Families by Primary Occupation', style: TextStyle(fontWeight: FontWeight.bold)))),
+          const SizedBox(height: 12),
           // Families by primary occupation
           TextFormField(controller: _familiesFarmingCtrl, decoration: InputDecoration(labelText: 'Farming families', errorText: _errors['farmingFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          const SizedBox(height: 12),
           TextFormField(controller: _familiesLabourCtrl, decoration: InputDecoration(labelText: 'Farm labor families', errorText: _errors['farmLabourFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          const SizedBox(height: 12),
           TextFormField(controller: _familiesGovtCtrl, decoration: InputDecoration(labelText: 'Govt/Semi-Govt job families', errorText: _errors['govtJobFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          const SizedBox(height: 12),
           TextFormField(controller: _familiesNonGovtCtrl, decoration: InputDecoration(labelText: 'Other Non-Govt job families', errorText: _errors['nonGovtJobFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          const SizedBox(height: 12),
           TextFormField(controller: _familiesBusinessCtrl, decoration: InputDecoration(labelText: 'Private business households', errorText: _errors['businessFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+          const SizedBox(height: 12),
           TextFormField(controller: _familiesUnemployedCtrl, decoration: InputDecoration(labelText: 'Unemployed families', errorText: _errors['unemployedFamilies']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
         ]),
         isActive: _currentStep == 2,
@@ -1004,18 +1022,29 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('Connectivity'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.1. Connectivity Distance (Detail & Distance in Km)', style: TextStyle(fontWeight: FontWeight.bold)))),
-          TextFormField(controller: _nearestCity, decoration: InputDecoration(labelText: 'Nearest City *', hintText: 'City Name', errorText: _errors['nearestCity'])),
-          TextFormField(controller: _distanceToCity, decoration: InputDecoration(labelText: 'Distance to Nearest City (km) *', hintText: 'e.g., 10.5', errorText: _errors['distanceToCity']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
-          TextFormField(controller: _headquartersName, decoration: InputDecoration(labelText: 'Taluka Headquarters *', hintText: 'Headquarters Name', errorText: _errors['talukaHeadquarters'])),
-          TextFormField(controller: _distanceToHQ, decoration: InputDecoration(labelText: 'Distance to Taluka Headquarters (km) *', hintText: 'e.g., 25.5', errorText: _errors['distanceToHQ']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
-          TextFormField(controller: _districtHeadquartersName, decoration: InputDecoration(labelText: 'District Headquarters *', hintText: 'Headquarters Name', errorText: _errors['districtHeadquarters'])),
-          TextFormField(controller: _distanceToDistrictHQ, decoration: InputDecoration(labelText: 'Distance to District Headquarters (km) *', hintText: 'e.g., 50.2', errorText: _errors['distanceToDistrictHQ']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
           const SizedBox(height: 12),
+          TextFormField(controller: _nearestCity, decoration: InputDecoration(labelText: 'Nearest City *', hintText: 'City Name', errorText: _errors['nearestCity'])),
+          const SizedBox(height: 12),
+          TextFormField(controller: _distanceToCity, decoration: InputDecoration(labelText: 'Distance to Nearest City (km) *', hintText: 'e.g., 10.5', errorText: _errors['distanceToCity']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
+          const SizedBox(height: 12),
+          TextFormField(controller: _headquartersName, decoration: InputDecoration(labelText: 'Taluka Headquarters *', hintText: 'Headquarters Name', errorText: _errors['talukaHeadquarters'])),
+          const SizedBox(height: 12),
+          TextFormField(controller: _distanceToHQ, decoration: InputDecoration(labelText: 'Distance to Taluka Headquarters (km) *', hintText: 'e.g., 25.5', errorText: _errors['distanceToHQ']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
+          const SizedBox(height: 12),
+          TextFormField(controller: _districtHeadquartersName, decoration: InputDecoration(labelText: 'District Headquarters *', hintText: 'Headquarters Name', errorText: _errors['districtHeadquarters'])),
+          const SizedBox(height: 12),
+          TextFormField(controller: _distanceToDistrictHQ, decoration: InputDecoration(labelText: 'Distance to District Headquarters (km) *', hintText: 'e.g., 50.2', errorText: _errors['distanceToDistrictHQ']), keyboardType: const TextInputType.numberWithOptions(decimal: true), inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]),
+          const SizedBox(height: 24),
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.2. Facilities (Detail & Distance)', style: TextStyle(fontWeight: FontWeight.bold)))),
+          const SizedBox(height: 12),
           TextFormField(controller: _busStationDetails, decoration: InputDecoration(labelText: 'Bus Station Details *', hintText: 'e.g., Central Bus Stand, 2 km away', errorText: _errors['busStation'])),
+          const SizedBox(height: 12),
           TextFormField(controller: _railwayStationDetails, decoration: InputDecoration(labelText: 'Railway Station Details *', hintText: 'e.g., City Railway Station, 15 km away', errorText: _errors['railwayStation'])),
+          const SizedBox(height: 12),
           TextFormField(controller: _postOfficeDetails, decoration: InputDecoration(labelText: 'Post Office Details *', hintText: 'e.g., Main Post Office, 1 km away', errorText: _errors['postOffice'])),
+          const SizedBox(height: 12),
           TextFormField(controller: _policeStationDetails, decoration: InputDecoration(labelText: 'Police Station Details *', hintText: 'e.g., Taluka Police Station, 8 km away', errorText: _errors['policeStation'])),
+          const SizedBox(height: 12),
           TextFormField(controller: _bankDetails, decoration: InputDecoration(labelText: 'Bank Details *', hintText: 'e.g., State Bank, 5 km away', errorText: _errors['bank'])),
         ]),
         isActive: _currentStep == 3,
@@ -1024,7 +1053,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         title: const Text('Infrastructure & Utilities'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // 5.1 Roads, Water & Utilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasAsphaltRoad'] != null || _errors['hasRawRoad'] != null || _errors['hasWaterSystem'] != null || _errors['hasDrainage'] != null || _errors['hasElectricity'] != null || _errors['hasWasteDisposal'] != null) ? Colors.red : null)))),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasAsphaltRoad'] != null || _errors['hasRawRoad'] != null || _errors['hasWaterSystem'] != null || _errors['hasDrainage'] != null || _errors['hasElectricity'] != null || _errors['hasWasteDisposal'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Approach Asphalt Road *', hasAsphaltRoad, (val) => setState(() => hasAsphaltRoad = val), errorText: _errors['hasAsphaltRoad']),
           if (hasAsphaltRoad == true)
             Padding(
@@ -1064,7 +1093,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
           const SizedBox(height: 12),
           // 5.2 Public Water Sources
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasWaterStorage'] != null || _errors['hasPublicWell'] != null || _errors['hasPublicPond'] != null || _errors['hasWaterForCattle'] != null) ? Colors.red : null)))),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasWaterStorage'] != null || _errors['hasPublicWell'] != null || _errors['hasPublicPond'] != null || _errors['hasWaterForCattle'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Water Storage Arrangement *', hasWaterStorage, (val) => setState(() => hasWaterStorage = val), errorText: _errors['hasWaterStorage']),
           if (hasWaterStorage == true)
             Padding(
@@ -1092,7 +1121,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
           const SizedBox(height: 12),
           // 5.3 Education Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasPrimarySchool'] != null || _errors['hasSecondarySchool'] != null || _errors['hasHigherSecondary'] != null || _errors['hasCollege'] != null || _errors['hasUniversity'] != null || _errors['hasAnganwadi'] != null || _errors['hasItc'] != null) ? Colors.red : null)))),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasPrimarySchool'] != null || _errors['hasSecondarySchool'] != null || _errors['hasHigherSecondary'] != null || _errors['hasCollege'] != null || _errors['hasUniversity'] != null || _errors['hasAnganwadi'] != null || _errors['hasItc'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Primary school *', hasPrimarySchool, (val) => setState(() => hasPrimarySchool = val), errorText: _errors['hasPrimarySchool']),
           if (hasPrimarySchool == true)
             Padding(
@@ -1138,7 +1167,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
           const SizedBox(height: 12),
           // 5.4 Health Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasDispensary'] != null || _errors['hasPhc'] != null || _errors['hasGovHospital'] != null || _errors['hasPrivateHospital'] != null || _errors['hasDrugStore'] != null || _errors['hasAnimalHospital'] != null) ? Colors.red : null)))),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasDispensary'] != null || _errors['hasPhc'] != null || _errors['hasGovHospital'] != null || _errors['hasPrivateHospital'] != null || _errors['hasDrugStore'] != null || _errors['hasAnimalHospital'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Dispensary *', hasDispensary, (val) => setState(() => hasDispensary = val), errorText: _errors['hasDispensary']),
           if (hasDispensary == true)
             Padding(
@@ -1178,7 +1207,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
           const SizedBox(height: 12),
           // 5.5 Markets, Community & Services
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasCommunityHall'] != null || _errors['hasFairPriceShop'] != null || _errors['hasGroceryMarket'] != null || _errors['hasVegetableMarket'] != null || _errors['hasGrindingMill'] != null || _errors['hasRestaurant'] != null || _errors['hasPublicTransport'] != null || _errors['hasCooperative'] != null || _errors['hasPublicGarden'] != null || _errors['hasCinema'] != null || _errors['hasColdStorage'] != null || _errors['hasSportsGround'] != null) ? Colors.red : null)))),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasCommunityHall'] != null || _errors['hasFairPriceShop'] != null || _errors['hasGroceryMarket'] != null || _errors['hasVegetableMarket'] != null || _errors['hasGrindingMill'] != null || _errors['hasRestaurant'] != null || _errors['hasPublicTransport'] != null || _errors['hasCooperative'] != null || _errors['hasPublicGarden'] != null || _errors['hasCinema'] != null || _errors['hasColdStorage'] != null || _errors['hasSportsGround'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Community Hall *', hasCommunityHall, (val) => setState(() => hasCommunityHall = val), errorText: _errors['hasCommunityHall']),
           if (hasCommunityHall == true)
             Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _communityHallCount, decoration: InputDecoration(labelText: 'Community Hall (count)', hintText: 'Enter count if available', errorText: _errors['hasCommunityHallCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
@@ -1218,7 +1247,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
           const SizedBox(height: 12),
           // 5.6 Religious/Mortality Facilities
-          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count if available)', style: TextStyle(fontWeight: FontWeight.bold, color: (_errors['hasTemple'] != null || _errors['hasMosque'] != null || _errors['hasOtherReligious'] != null || _errors['hasCremation'] != null || _errors['hasCemetery'] != null) ? Colors.red : null)))),
+          InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasTemple'] != null || _errors['hasMosque'] != null || _errors['hasOtherReligious'] != null || _errors['hasCremation'] != null || _errors['hasCemetery'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Temple *', hasTemple, (val) => setState(() => hasTemple = val), errorText: _errors['hasTemple']),
           if (hasTemple == true)
             Padding(
@@ -1255,6 +1284,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
       Step(
         title: const Text('Attachments & GPS'),
         content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(height: 8),
           TextFormField(decoration: const InputDecoration(labelText: 'GPS Location'), readOnly: true, initialValue: _gpsLocation ?? ''),
           const SizedBox(height: 8),
           ElevatedButton.icon(onPressed: _capturePhotoAndTag, icon: const Icon(Icons.camera_alt), label: const Text('Capture Photo (camera only)')),
@@ -1398,7 +1428,9 @@ class _VillageFormPageState extends State<VillageFormPage> {
           padding: const EdgeInsets.only(left: 16.0, top: 8.0),
           child: Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
               color: errorText != null ? Theme.of(context).colorScheme.error : null,
             )),
         ),
