@@ -146,7 +146,7 @@ class VillageService {
 
       // Handle totalFamily specifically, defaulting to 0 for count fields
       if (payload.containsKey('totalFamily')) {
-        final totalFamilyValue = payload['totalFamily'] ?? 0;
+        final totalFamilyValue = payload['totalFamily'];
         map['total_family'] = totalFamilyValue;
         map['number_of_families'] = totalFamilyValue;
       }

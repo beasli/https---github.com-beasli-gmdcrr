@@ -1,4 +1,4 @@
-import 'config/theme.dart';
+import 'core/config/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/services/network_service.dart';
@@ -22,12 +22,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // Create a default TextTheme or customize your own
-  final TextTheme _textTheme = Typography.blackMountainView;
 
   @override
   Widget build(BuildContext context) {
-    final materialTheme = MaterialTheme(_textTheme);
 
     return MultiProvider(
       providers: [
@@ -39,31 +36,84 @@ class _MyAppState extends State<MyApp> {
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'GMDCRR',
-          theme: materialTheme.light(),
-          darkTheme: materialTheme.dark(),
+          theme: AppTheme.darkTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.dark,
           home: const SplashScreen(),
           routes: {
             '/login': (context) => const LoginScreen(),
           },
           builder: (context, child) {
             // Show an offline banner when NetworkService reports offline.
-            return AppUpdateWrapper(
-              child: Stack(
-                children: [
-                  child ?? const SizedBox.shrink(),
-                  // Consumer rebuilds the banner whenever NetworkService notifies
-                  const Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: OfflineBanner(),
+            return Stack(
+              children: [
+                // 1. Global Background Gradient
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF00352F), // Deep teal green
+                        Color(0xFF006B57), // Rich emerald green
+                        Color(0xFF00171C), // Dark blue-green / charcoal
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+                // 2. Subtle Geometric Overlay
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _GeometricBackgroundPainter(),
+                  ),
+                ),
+                // 3. App Content (Wrapped in Update Checker)
+                Positioned.fill(
+                  child: AppUpdateWrapper(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
+                // 4. Offline Banner
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: OfflineBanner(),
+                ),
+              ],
             );
           },
         );
       }),
     );
   }
+}
+
+class _GeometricBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    // Draw a rounded square top-left
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.1, size.height * 0.1, 100, 100),
+        const Radius.circular(16),
+      ),
+      paint,
+    );
+
+    // Draw a diagonal line
+    canvas.drawLine(
+      Offset(0, size.height * 0.35),
+      Offset(size.width, size.height * 0.25),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

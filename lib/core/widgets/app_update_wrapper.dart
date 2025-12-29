@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/app_version_service.dart';
 import '../utils/open_url.dart';
@@ -64,26 +65,34 @@ class _AppUpdateWrapperState extends State<AppUpdateWrapper> {
   }
 
   void _showOptionalUpdateDialog(String? version, String? url) {
-    showDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Update Available'),
-        content: Text('Version ${version ?? 'New'} is available. Would you like to update?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Later'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (url != null) openUrl(url);
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('Update'),
-          ),
-        ],
+      barrierLabel: 'Dismiss',
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (ctx, animation, secondaryAnimation) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AlertDialog(
+          title: const Text('Update Available'),
+          content: Text('Version ${version ?? 'New'} is available. Would you like to update?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Later'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (url != null) openUrl(url);
+                Navigator.of(ctx).pop();
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
       ),
+      transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
     );
   }
 
