@@ -204,7 +204,7 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
       // This ensures the SnackBar is visible in the correct context.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Survey submitted successfully!'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Survey submitted successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
         );
       }
       _refreshData(); // Reload the list to show the new/updated survey
@@ -246,14 +246,14 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
 
     if (result['success'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Survey synced successfully!'), backgroundColor: Colors.green),
+        const SnackBar(content: Text('Survey synced successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
       );
       // On success, delete the local draft.
       await _localDb.deleteFamilySurvey(localId);
       _refreshData(); // Refresh the lists
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sync failed. Please edit and submit manually.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Sync failed. Please edit and submit manually.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
       );
     }
   }
@@ -291,7 +291,7 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
       await _localDb.deleteFamilySurvey(localId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Local draft deleted.'), backgroundColor: Colors.green),
+        const SnackBar(content: Text('Local draft deleted.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
       );
       _refreshData();
     }
@@ -349,9 +349,9 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
                 decoration: const InputDecoration(
                   hintText: 'Search by Name, House No, ID...',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.black54),
+                  hintStyle: TextStyle(color: Colors.white54),
                 ),
-                style: const TextStyle(color: Colors.black),
+                style: const TextStyle(color: Colors.white),
                 onSubmitted: (_) => _loadSurveys(),
               )
             : Text(_villageName ?? 'Family Surveys'),
@@ -359,9 +359,10 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
             ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _stopSearch)
             : null,
         actions: [
-          if (_isSearching)
-            IconButton(icon: const Icon(Icons.clear), onPressed: _clearSearch)
-          else ...[
+          if (_isSearching) ...[
+            IconButton(icon: const Icon(Icons.search), onPressed: _loadSurveys),
+            IconButton(icon: const Icon(Icons.clear), onPressed: _clearSearch),
+          ] else ...[
             IconButton(
               icon: const Icon(Icons.search),
               onPressed: _startSearch,

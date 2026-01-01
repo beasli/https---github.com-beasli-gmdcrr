@@ -1143,7 +1143,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Family Member ${index + 1}', style: Theme.of(context).textTheme.titleLarge),
+              Text('Family Member ${index + 1}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
               TextButton.icon(
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
                 label: const Text('Remove', style: TextStyle(color: Colors.red)),
@@ -1224,7 +1224,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           validator: (v) => v == null ? 'Required' : null,
         ),
         const SizedBox(height: 16),
-        if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleLarge),
+        if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
         if (isHead) const SizedBox(height: 8),
         TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
         const SizedBox(height: 12),
@@ -1435,7 +1435,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         content: Form(
           key: _step1Key,
           child: Column(key: _stepContentKeys[0], crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Head of Family Details', style: Theme.of(context).textTheme.titleLarge),
+            Text('Head of Family Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextFormField(controller: _familyNoCtrl, decoration: const InputDecoration(labelText: 'Family No.'), readOnly: true),
             const SizedBox(height: 12),
@@ -1447,7 +1447,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             const SizedBox(height: 16),
             _buildMemberForm(_familyMembers[0], 0), // Form for the Head of Family
             const SizedBox(height: 16),
-            Text('Photo & Document Capture', style: Theme.of(context).textTheme.titleLarge),
+            Text('Photo & Document Capture', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ListTile(
               leading: _buildImagePreview(_familyMembers[0].photoUrl),
@@ -1456,7 +1456,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
               trailing: _familyMembers[0].photoUrl != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
             ),
             const Divider(height: 32, thickness: 1),
-            Text('Other Family Members', style: Theme.of(context).textTheme.titleLarge),
+            Text('Other Family Members', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ..._familyMembers.asMap().entries.where((entry) => entry.key > 0).map((entry) => _buildMemberForm(entry.value, entry.key)),
             Center(child: ElevatedButton.icon(onPressed: _addFamilyMember, icon: const Icon(Icons.add), label: const Text('Add New Family Member'))),
@@ -1470,7 +1470,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         content: Form(
           key: _step2Key,
           child: Column(key: _stepContentKeys[1], crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Residence Details - Part 1', style: Theme.of(context).textTheme.titleLarge),
+            Text('Residence Details - Part 1', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextFormField(controller: _residenceAgeCtrl, decoration: const InputDecoration(labelText: 'Residence Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired),
             const SizedBox(height: 12),
@@ -1493,7 +1493,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildDropdown('Interested in living independently?', _residenceLiveOwnLifeInterest, ['Yes', 'No'], (val) => setState(() { _residenceLiveOwnLifeInterest = val; })),
             const Divider(height: 32),
 
-            Text('Residence Amenities', style: Theme.of(context).textTheme.titleLarge),
+            Text('Residence Amenities', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildDropdown('Well/Borewell', _residenceWellBorewell, ['Yes', 'No'], (val) => setState(() { _residenceWellBorewell = val; })),
             const SizedBox(height: 12),
@@ -1512,7 +1512,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildDropdown('Solar Energy Facility', _residenceSolarEnergy, ['Yes', 'No'], (val) => setState(() { _residenceSolarEnergy = val; })),
             const Divider(height: 32),
 
-            Text('Residence Document Capture', style: Theme.of(context).textTheme.titleLarge),
+            Text('Residence Document Capture', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildDropdown('Is there documentary evidence?', _residenceDocumentaryEvidence, ['Yes', 'No'], (val) => setState(() { _residenceDocumentaryEvidence = val; })),
             const SizedBox(height: 12),
@@ -1532,7 +1532,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         content: Form(
           key: _step3Key,
           child: Column(key: _stepContentKeys[2], crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Land Ownership Details', style: Theme.of(context).textTheme.titleLarge),
+            Text('Land Ownership Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildDropdown('Does the family hold any land?', _landHolds, ['Yes', 'No'], (val) => setState(() { _landHolds = val; })),
             if (_landHolds == 'Yes') ...[
@@ -1542,7 +1542,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
               Center(child: ElevatedButton.icon(onPressed: _addLandRecord, icon: const Icon(Icons.add), label: const Text('Add a land record'))),
             ],
             const Divider(height: 32),
-            Text('Tree Details', style: Theme.of(context).textTheme.titleLarge),
+            Text('Tree Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             if (_treeRecords.isEmpty)
               const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No tree records added.'))),
@@ -1558,7 +1558,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         content: Form(
           key: _step4Key, 
           child: Column(key: _stepContentKeys[3], crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Annual Income Sources', style: Theme.of(context).textTheme.titleLarge),
+            Text('Annual Income Sources', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextFormField(controller: _incomeFarmingCtrl, decoration: const InputDecoration(labelText: 'Farming'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
             const SizedBox(height: 12),
@@ -1575,14 +1575,14 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             TextFormField(controller: _estimatedAnnualIncomeCtrl, decoration: const InputDecoration(labelText: 'Total Estimated Annual Income'), readOnly: true, validator: _validateRequired),
             const Divider(height: 32),
 
-            Text('Other Assets', style: Theme.of(context).textTheme.titleLarge),
+            Text('Other Assets', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             if (_assetRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No asset records added.'))),
             ..._assetRecords.asMap().entries.map((entry) => _buildAssetRecordForm(entry.value, entry.key)),
             Center(child: ElevatedButton.icon(onPressed: _addAssetRecord, icon: const Icon(Icons.add), label: const Text('Add an asset record'))),
             const Divider(height: 32),
 
-            Text('Livestock Details', style: Theme.of(context).textTheme.titleLarge),
+            Text('Livestock Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             if (_livestockRecords.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 16.0), child: Center(child: Text('No livestock records added.'))),
             ..._livestockRecords.asMap().entries.map((entry) => _buildLivestockRecordForm(entry.value, entry.key)),
@@ -1598,7 +1598,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         content: Form(
           key: _step5Key,
           child: Column(key: _stepContentKeys[4], crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Annual Expenses', style: Theme.of(context).textTheme.titleLarge),
+            Text('Annual Expenses', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextFormField(controller: _expenseAgricultureCtrl, decoration: const InputDecoration(labelText: 'Agriculture'), keyboardType: TextInputType.number, validator: _validateRequired),
             const SizedBox(height: 12),
@@ -1627,7 +1627,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             TextFormField(controller: _expenseOthersCtrl, decoration: const InputDecoration(labelText: 'Others'), keyboardType: TextInputType.number, validator: _validateRequired),
             const Divider(height: 32),
 
-            Text('Loans and Debts', style: Theme.of(context).textTheme.titleLarge),
+            Text('Loans and Debts', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _buildDropdown('Have taken any loan?', _loanTaken, ['Yes', 'No'], (val) => setState(() { _loanTaken = val; })),
             if (_loanTaken == 'Yes') ...[
@@ -1642,7 +1642,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ],
             const Divider(height: 32),
 
-            Text('Final Verification', style: Theme.of(context).textTheme.titleLarge),
+            Text('Final Verification', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -1679,7 +1679,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           key: _stepContentKeys[5],
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Review Complete', style: Theme.of(context).textTheme.titleLarge),
+            Text('Review Complete', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text('All mandatory verification steps have been completed. Review the collected data below before final submission.'),
             const Divider(height: 32),

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/local_db.dart';
 import '../../core/services/village_service.dart';
@@ -23,6 +25,9 @@ class _HomePageState extends State<HomePage> {
   bool _syncCompleted = false;
   List<String> _syncErrors = [];
   String _statusMessage = '';
+  Duration _remainingTime = Duration.zero;
+  Timer? _timer;
+  String _appVersion = '';
 
   @override
   void initState() {
@@ -31,6 +36,41 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndSyncLocalData();
     });
+    _loadAppVersion();
+    _startTimer();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = 'v${info.version} (${info.buildNumber})';
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _startTimer() {
+    _updateTime();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
+  }
+
+  void _updateTime() async {
+    final remaining = await AuthService().getRemainingSessionTime();
+    if (mounted) {
+      setState(() {
+        _remainingTime = remaining;
+      });
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(d.inHours);
+    final minutes = twoDigits(d.inMinutes.remainder(60));
+    final seconds = twoDigits(d.inSeconds.remainder(60));
+    return "$hours:$minutes:$seconds";
   }
 
   Future<void> _checkAndSyncLocalData() async {
@@ -150,6 +190,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
@@ -193,7 +239,7 @@ class _HomePageState extends State<HomePage> {
                   margin: const EdgeInsets.symmetric(vertical: 16),
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color.fromRGBO(5, 30, 30, 0.7), // Glassmorphism dark bg
+                    color: const Color.fromRGBO(5, 30, 30, 0.4), // Glassmorphism dark bg
                     borderRadius: BorderRadius.circular(32),
                     border: Border.all(
                       color: const Color(0xFF36D1A8).withOpacity(0.3),
@@ -257,7 +303,6 @@ class _HomePageState extends State<HomePage> {
                             _buildDashboardTile(
                               icon: Icons.access_time,
                               label: "Pending Entries",
-                              isHighlighted: true,
                               onTap: () {
                                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage())).then((_) => _checkAndSyncLocalData());
                               },
@@ -306,6 +351,18 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
+                      // const SizedBox(height: 16),
+                      // Text(
+                      //   "Auto logout in: ${_formatDuration(_remainingTime)}",
+                      //   style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+                      // ),
+                      if (_appVersion.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _appVersion,
+                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                      ],
                     ],
                   ),
                 ),

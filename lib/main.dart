@@ -36,8 +36,12 @@ class _MyAppState extends State<MyApp> {
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'GMDCRR',
-          theme: AppTheme.darkTheme,
-          darkTheme: AppTheme.darkTheme,
+          theme: AppTheme.darkTheme.copyWith(
+            canvasColor: const Color(0xFF051E1E),
+          ),
+          darkTheme: AppTheme.darkTheme.copyWith(
+            canvasColor: const Color(0xFF051E1E),
+          ),
           themeMode: ThemeMode.dark,
           home: const SplashScreen(),
           routes: {
