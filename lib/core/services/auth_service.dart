@@ -12,7 +12,7 @@ class AuthService extends ChangeNotifier {
   Timer? _sessionTimer;
   // Check if exp time pending more than "6 days and 23 hour and 55 mintues"
   // Change this to Duration(minutes: 5) on production if needed
-  static const Duration minTokenValidity = Duration(days: 6, hours: 23, minutes: 55);
+  static const Duration minTokenValidity = Duration(days: 0, hours: 0, minutes: 15);
 
   bool get isAuthenticated => _isAuthenticated;
 
