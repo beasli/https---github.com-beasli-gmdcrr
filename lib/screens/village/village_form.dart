@@ -956,7 +956,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
     final steps = <Step>[
       Step(
-        title: Container(key: _stepTitleKeys[0], child: const Text('General Identification')),
+        title: Container(key: _stepTitleKeys[0], child: const Text('General Identification', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Column(key: _stepContentKeys[0], crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 8),
           TextFormField(controller: _villageNameCtrl, decoration: const InputDecoration(labelText: 'Village name'), readOnly: true),
@@ -972,7 +972,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 0,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[1], child: const Text('Village Area Details')),
+        title: Container(key: _stepTitleKeys[1], child: const Text('Village Area Details', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Column(key: _stepContentKeys[1], crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 8),
           TextFormField(controller: _agriLandCtrl, decoration: InputDecoration(labelText: 'Agricultural Land Area', errorText: _errors['agriLand']), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
@@ -992,7 +992,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 1,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[2], child: const Text('Family Demographics')),
+        title: Container(key: _stepTitleKeys[2], child: const Text('Family Demographics', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Column(key: _stepContentKeys[2], crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 2), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('3.1. Families by Social Group', style: TextStyle(fontWeight: FontWeight.bold)))),
           const SizedBox(height: 12),
@@ -1029,7 +1029,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 2,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[3], child: const Text('Connectivity')),
+        title: Container(key: _stepTitleKeys[3], child: const Text('Connectivity', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Column(key: _stepContentKeys[3], crossAxisAlignment: CrossAxisAlignment.start, children: [
           InkWell(onTap: () => setState(() => _currentStep = 3), child: const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('4.1. Connectivity Distance (Detail & Distance in Km)', style: TextStyle(fontWeight: FontWeight.bold)))),
           const SizedBox(height: 12),
@@ -1060,7 +1060,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 3,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[4], child: const Text('Infrastructure & Utilities')),
+        title: Container(key: _stepTitleKeys[4], child: const Text('Infrastructure & Utilities', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Column(key: _stepContentKeys[4], crossAxisAlignment: CrossAxisAlignment.start, children: [
           // 5.1 Roads, Water & Utilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasAsphaltRoad'] != null || _errors['hasRawRoad'] != null || _errors['hasWaterSystem'] != null || _errors['hasDrainage'] != null || _errors['hasElectricity'] != null || _errors['hasWasteDisposal'] != null) ? Colors.red : null)))),
@@ -1292,7 +1292,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         isActive: _currentStep == 4,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[5], child: const Text('Attachments & GPS')),
+        title: Container(key: _stepTitleKeys[5], child: const Text('Attachments & GPS', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Column(key: _stepContentKeys[5], crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 8),
           TextFormField(decoration: const InputDecoration(labelText: 'GPS Location'), readOnly: true, initialValue: _gpsLocation ?? ''),
