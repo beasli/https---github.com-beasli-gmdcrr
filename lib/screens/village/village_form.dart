@@ -1390,7 +1390,14 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Village Survey (Stepper)')),
-      body: Stepper(
+      body: Theme(
+        data: Theme.of(context).copyWith(
+          inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+            labelStyle: const TextStyle(fontSize: 18),
+            floatingLabelStyle: const TextStyle(fontSize: 18),
+          ),
+        ),
+        child: Stepper(
         type: StepperType.vertical,
         currentStep: _currentStep,
         onStepContinue: null,
@@ -1410,6 +1417,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
         },
         controlsBuilder: (context, details) => const SizedBox.shrink(),
         steps: steps,
+      ),
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(8),

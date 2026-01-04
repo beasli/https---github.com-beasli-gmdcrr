@@ -63,9 +63,16 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                labelStyle: const TextStyle(fontSize: 18),
+                floatingLabelStyle: const TextStyle(fontSize: 18),
+              ),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Login', style: Theme.of(context).textTheme.headlineSmall),
@@ -108,6 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       : const Text('Login'),
                 ),
               ],
+            ),
             ),
           ),
         ),

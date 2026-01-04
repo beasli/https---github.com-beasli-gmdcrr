@@ -1895,7 +1895,14 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   ],
                 ),
               )
-            : Stepper(
+            : Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    labelStyle: const TextStyle(fontSize: 18),
+                    floatingLabelStyle: const TextStyle(fontSize: 18),
+                  ),
+                ),
+                child: Stepper(
                 type: StepperType.vertical,
                 currentStep: _currentStep,
                 onStepContinue: _onStepContinue,
@@ -1923,6 +1930,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   return const SizedBox.shrink();
                 },
               ),
+            ),
         bottomNavigationBar: _isProcessing
             ? const LinearProgressIndicator()
             : SafeArea(
