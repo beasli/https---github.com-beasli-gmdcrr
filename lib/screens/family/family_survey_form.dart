@@ -1898,8 +1898,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             : Theme(
                 data: Theme.of(context).copyWith(
                   inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
-                    labelStyle: const TextStyle(fontSize: 18),
+                    labelStyle: const TextStyle(fontSize: 14),
                     floatingLabelStyle: const TextStyle(fontSize: 18),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    isDense: true,
                   ),
                 ),
                 child: Stepper(
