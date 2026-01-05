@@ -125,6 +125,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   String? _residenceAuthorized;
   String? _residenceOwnerTenant;
   final _residenceTotalRoomsCtrl = TextEditingController();
+  final _residenceFloorsCtrl = TextEditingController();
   String? _residencePakkaKachha;
   String? _residenceRoofType;
   final _residencePlotAreaCtrl = TextEditingController();
@@ -375,6 +376,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     }
     _residenceAgeCtrl.dispose();
     _residenceTotalRoomsCtrl.dispose();
+    _residenceFloorsCtrl.dispose();
     _residencePlotAreaCtrl.dispose();
     _residenceConstructionAreaCtrl.dispose();
 
@@ -717,6 +719,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _residenceAuthorized = (accommodation['is_authorized'] == true) ? 'Yes' : 'No';
         _residenceOwnerTenant = accommodation['ownership']?.toString();
         _residenceTotalRoomsCtrl.text = accommodation['total_rooms']?.toString() ?? '';
+        _residenceFloorsCtrl.text = accommodation['no_of_floors']?.toString() ?? '';
         _residencePakkaKachha = accommodation['house_type']?.toString();
         _residenceRoofType = accommodation['roof_type']?.toString();
         _residencePlotAreaCtrl.text = accommodation['land_area']?.toString() ?? '';
@@ -955,6 +958,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "authorized": _residenceAuthorized == 'Yes',
         "ownership": _residenceOwnerTenant,
         "total_rooms": int.tryParse(_residenceTotalRoomsCtrl.text),
+        "no_of_floors": int.tryParse(_residenceFloorsCtrl.text),
         "house_type": _residencePakkaKachha,
         "roof_type": _residenceRoofType,
         "land_area": double.tryParse(_residencePlotAreaCtrl.text),
@@ -1480,6 +1484,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             const SizedBox(height: 12),
             TextFormField(controller: _residenceTotalRoomsCtrl, decoration: const InputDecoration(labelText: 'Total No. of rooms'), keyboardType: TextInputType.number, validator: _validateRequired),
             const SizedBox(height: 12),
+            TextFormField(controller: _residenceFloorsCtrl, decoration: const InputDecoration(labelText: 'No. of floors'), keyboardType: TextInputType.number, validator: _validateRequired),
+            const SizedBox(height: 12),
             _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() {
               _residencePakkaKachha = val;
               _residenceRoofType = null;
@@ -1736,6 +1742,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildReviewRow('Residence Age', '${_residenceAgeCtrl.text} years'),
             _buildReviewRow('Is Authorized?', _residenceAuthorized),
             _buildReviewRow('Ownership', _residenceOwnerTenant),
+            _buildReviewRow('No. of floors', _residenceFloorsCtrl.text),
             _buildReviewRow('House Type', _residencePakkaKachha),
             _buildReviewRow('Toilet Facilities', _residenceToiletFacilities),
             if (_housePhotoUrl != null)
