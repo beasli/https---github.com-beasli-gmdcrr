@@ -1480,9 +1480,19 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             const SizedBox(height: 12),
             TextFormField(controller: _residenceTotalRoomsCtrl, decoration: const InputDecoration(labelText: 'Total No. of rooms'), keyboardType: TextInputType.number, validator: _validateRequired),
             const SizedBox(height: 12),
-            _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() { _residencePakkaKachha = val; })),
+            _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() {
+              _residencePakkaKachha = val;
+              _residenceRoofType = null;
+            })),
             const SizedBox(height: 12),
-            _buildDropdown('Type of Roof', _residenceRoofType, ['RCC', 'Sheets', 'Tubes'], (val) => setState(() { _residenceRoofType = val; })),
+            _buildDropdown(
+              'Type of Roof',
+              (_residencePakkaKachha == 'Pakka' && ['RCC', 'Tin Sheet', 'Clay Tile'].contains(_residenceRoofType)) || (_residencePakkaKachha == 'Kachha' && ['Tin Sheet', 'Clay Tile'].contains(_residenceRoofType)) ? _residenceRoofType : null,
+              _residencePakkaKachha == 'Pakka'
+                  ? ['RCC', 'Tin Sheet', 'Clay Tile']
+                  : (_residencePakkaKachha == 'Kachha' ? ['Tin Sheet', 'Clay Tile'] : []),
+              (val) => setState(() { _residenceRoofType = val; })
+            ),
             const SizedBox(height: 12),
             TextFormField(controller: _residencePlotAreaCtrl, decoration: const InputDecoration(labelText: 'Land/Plot Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
             const SizedBox(height: 12),
