@@ -1066,228 +1066,144 @@ class _VillageFormPageState extends State<VillageFormPage> {
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasAsphaltRoad'] != null || _errors['hasRawRoad'] != null || _errors['hasWaterSystem'] != null || _errors['hasDrainage'] != null || _errors['hasElectricity'] != null || _errors['hasWasteDisposal'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Approach Asphalt Road *', hasAsphaltRoad, (val) => setState(() => hasAsphaltRoad = val), errorText: _errors['hasAsphaltRoad']),
           if (hasAsphaltRoad == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _asphaltRoadCount, decoration: InputDecoration(labelText: 'Approach Asphalt Road (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasAsphaltRoadCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_asphaltRoadCount, 'Approach Asphalt Road (Detail/Count)', _errors['hasAsphaltRoadCount'], hintText: 'Enter Detail/Count if available'),
           _buildRadioGroup('Approach Raw Road *', hasRawRoad, (val) => setState(() => hasRawRoad = val), errorText: _errors['hasRawRoad']),
           if (hasRawRoad == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _rawRoadCount, decoration: InputDecoration(labelText: 'Approach Raw Road (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasRawRoadCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_rawRoadCount, 'Approach Raw Road (Detail/Count)', _errors['hasRawRoadCount'], hintText: 'Enter Detail/Count if available'),
           _buildRadioGroup('Water system available *', hasWaterSystem, (val) => setState(() => hasWaterSystem = val), errorText: _errors['hasWaterSystem']),
           if (hasWaterSystem == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _waterSystemCount, decoration: InputDecoration(labelText: 'Water system (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasWaterSystemCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_waterSystemCount, 'Water system (Detail/Count)', _errors['hasWaterSystemCount'], hintText: 'Enter Detail/Count if available'),
           _buildRadioGroup('Drainage system available *', hasDrainage, (val) => setState(() => hasDrainage = val), errorText: _errors['hasDrainage']),
           if (hasDrainage == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _drainageSystemCount, decoration: InputDecoration(labelText: 'Drainage system (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasDrainageCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_drainageSystemCount, 'Drainage system (Detail/Count)', _errors['hasDrainageCount'], hintText: 'Enter Detail/Count if available'),
           _buildRadioGroup('Electricity system available *', hasElectricity, (val) => setState(() => hasElectricity = val), errorText: _errors['hasElectricity']),
           if (hasElectricity == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _electricitySystemCount, decoration: InputDecoration(labelText: 'Electricity system (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasElectricityCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_electricitySystemCount, 'Electricity system (Detail/Count)', _errors['hasElectricityCount'], hintText: 'Enter Detail/Count if available'),
           _buildRadioGroup('Public system for waste disposal *', hasWasteDisposal, (val) => setState(() => hasWasteDisposal = val), errorText: _errors['hasWasteDisposal']),
           if (hasWasteDisposal == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _wasteDisposalCount, decoration: InputDecoration(labelText: 'Public system for waste disposal (Detail/Count)', hintText: 'Enter Detail/Count if available', errorText: _errors['hasWasteDisposalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_wasteDisposalCount, 'Public system for waste disposal (Detail/Count)', _errors['hasWasteDisposalCount'], hintText: 'Enter Detail/Count if available'),
 
           const SizedBox(height: 12),
           // 5.2 Public Water Sources
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.2. Public Water Sources (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasWaterStorage'] != null || _errors['hasPublicWell'] != null || _errors['hasPublicPond'] != null || _errors['hasWaterForCattle'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Water Storage Arrangement *', hasWaterStorage, (val) => setState(() => hasWaterStorage = val), errorText: _errors['hasWaterStorage']),
           if (hasWaterStorage == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _waterStorageCount, decoration: InputDecoration(labelText: 'Water Storage Arrangement (count)', hintText: 'Enter count if available', errorText: _errors['hasWaterStorageCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_waterStorageCount, 'Water Storage Arrangement (count)', _errors['hasWaterStorageCount']),
           _buildRadioGroup('Public Well *', hasPublicWell, (val) => setState(() => hasPublicWell = val), errorText: _errors['hasPublicWell']),
           if (hasPublicWell == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _publicWellCount, decoration: InputDecoration(labelText: 'Public Well (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicWellCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_publicWellCount, 'Public Well (count)', _errors['hasPublicWellCount']),
           _buildRadioGroup('Public Pond *', hasPublicPond, (val) => setState(() => hasPublicPond = val), errorText: _errors['hasPublicPond']),
           if (hasPublicPond == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _publicPondCount, decoration: InputDecoration(labelText: 'Public Pond (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicPondCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_publicPondCount, 'Public Pond (count)', _errors['hasPublicPondCount']),
           _buildRadioGroup('Water for Cattle *', hasWaterForCattle, (val) => setState(() => hasWaterForCattle = val), errorText: _errors['hasWaterForCattle']),
           if (hasWaterForCattle == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _waterForCattleCount, decoration: InputDecoration(labelText: 'Water for Cattle (count)', hintText: 'Enter count if available', errorText: _errors['hasWaterForCattleCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_waterForCattleCount, 'Water for Cattle (count)', _errors['hasWaterForCattleCount']),
 
           const SizedBox(height: 12),
           // 5.3 Education Facilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.3. Education Facilities (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasPrimarySchool'] != null || _errors['hasSecondarySchool'] != null || _errors['hasHigherSecondary'] != null || _errors['hasCollege'] != null || _errors['hasUniversity'] != null || _errors['hasAnganwadi'] != null || _errors['hasItc'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Primary school *', hasPrimarySchool, (val) => setState(() => hasPrimarySchool = val), errorText: _errors['hasPrimarySchool']),
           if (hasPrimarySchool == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _primarySchoolCount, decoration: InputDecoration(labelText: 'Primary school (count)', hintText: 'Enter count if available', errorText: _errors['hasPrimarySchoolCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_primarySchoolCount, 'Primary school (count)', _errors['hasPrimarySchoolCount']),
           _buildRadioGroup('Secondary school *', hasSecondarySchool, (val) => setState(() => hasSecondarySchool = val), errorText: _errors['hasSecondarySchool']),
           if (hasSecondarySchool == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _secondarySchoolCount, decoration: InputDecoration(labelText: 'Secondary school (count)', hintText: 'Enter count if available', errorText: _errors['hasSecondarySchoolCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_secondarySchoolCount, 'Secondary school (count)', _errors['hasSecondarySchoolCount']),
           _buildRadioGroup('Higher Secondary School *', hasHigherSecondary, (val) => setState(() => hasHigherSecondary = val), errorText: _errors['hasHigherSecondary']),
           if (hasHigherSecondary == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _higherSecondaryCount, decoration: InputDecoration(labelText: 'Higher Secondary School (count)', hintText: 'Enter count if available', errorText: _errors['hasHigherSecondaryCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_higherSecondaryCount, 'Higher Secondary School (count)', _errors['hasHigherSecondaryCount']),
           _buildRadioGroup('College *', hasCollege, (val) => setState(() => hasCollege = val), errorText: _errors['hasCollege']),
           if (hasCollege == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _collegeCount, decoration: InputDecoration(labelText: 'College (count)', hintText: 'Enter count if available', errorText: _errors['hasCollegeCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_collegeCount, 'College (count)', _errors['hasCollegeCount']),
           _buildRadioGroup('University *', hasUniversity, (val) => setState(() => hasUniversity = val), errorText: _errors['hasUniversity']),
           if (hasUniversity == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _universityCount, decoration: InputDecoration(labelText: 'University (count)', hintText: 'Enter count if available', errorText: _errors['hasUniversityCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_universityCount, 'University (count)', _errors['hasUniversityCount']),
           _buildRadioGroup('Anganwadi *', hasAnganwadi, (val) => setState(() => hasAnganwadi = val), errorText: _errors['hasAnganwadi']),
           if (hasAnganwadi == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _anganwadiCount, decoration: InputDecoration(labelText: 'Anganwadi (count)', hintText: 'Enter count if available', errorText: _errors['hasAnganwadiCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_anganwadiCount, 'Anganwadi (count)', _errors['hasAnganwadiCount']),
           _buildRadioGroup('Industrial Training Centre *', hasItc, (val) => setState(() => hasItc = val), errorText: _errors['hasItc']),
           if (hasItc == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _itcCount, decoration: InputDecoration(labelText: 'Industrial Training Centre (count)', hintText: 'Enter count if available', errorText: _errors['hasItcCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_itcCount, 'Industrial Training Centre (count)', _errors['hasItcCount']),
 
           const SizedBox(height: 12),
           // 5.4 Health Facilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.4. Health Facilities (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasDispensary'] != null || _errors['hasPhc'] != null || _errors['hasGovHospital'] != null || _errors['hasPrivateHospital'] != null || _errors['hasDrugStore'] != null || _errors['hasAnimalHospital'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Dispensary *', hasDispensary, (val) => setState(() => hasDispensary = val), errorText: _errors['hasDispensary']),
           if (hasDispensary == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _dispensaryCount, decoration: InputDecoration(labelText: 'Dispensary (count)', hintText: 'Enter count if available', errorText: _errors['hasDispensaryCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_dispensaryCount, 'Dispensary (count)', _errors['hasDispensaryCount']),
           _buildRadioGroup('Primary Health Centre *', hasPhc, (val) => setState(() => hasPhc = val), errorText: _errors['hasPhc']),
           if (hasPhc == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _phcCount, decoration: InputDecoration(labelText: 'Primary Health Centre (count)', hintText: 'Enter count if available', errorText: _errors['hasPhcCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_phcCount, 'Primary Health Centre (count)', _errors['hasPhcCount']),
           _buildRadioGroup('Government Hospital *', hasGovHospital, (val) => setState(() => hasGovHospital = val), errorText: _errors['hasGovHospital']),
           if (hasGovHospital == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _govHospitalCount, decoration: InputDecoration(labelText: 'Government Hospital (count)', hintText: 'Enter count if available', errorText: _errors['hasGovHospitalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_govHospitalCount, 'Government Hospital (count)', _errors['hasGovHospitalCount']),
           _buildRadioGroup('Private hospital *', hasPrivateHospital, (val) => setState(() => hasPrivateHospital = val), errorText: _errors['hasPrivateHospital']),
           if (hasPrivateHospital == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _privateHospitalCount, decoration: InputDecoration(labelText: 'Private hospital (count)', hintText: 'Enter count if available', errorText: _errors['hasPrivateHospitalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_privateHospitalCount, 'Private hospital (count)', _errors['hasPrivateHospitalCount']),
           _buildRadioGroup('Drug store *', hasDrugStore, (val) => setState(() => hasDrugStore = val), errorText: _errors['hasDrugStore']),
           if (hasDrugStore == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _drugStoreCount, decoration: InputDecoration(labelText: 'Drug store (count)', hintText: 'Enter count if available', errorText: _errors['hasDrugStoreCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_drugStoreCount, 'Drug store (count)', _errors['hasDrugStoreCount']),
           _buildRadioGroup('Animal Hospital *', hasAnimalHospital, (val) => setState(() => hasAnimalHospital = val), errorText: _errors['hasAnimalHospital']),
           if (hasAnimalHospital == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _animalHospitalCount, decoration: InputDecoration(labelText: 'Animal Hospital (count)', hintText: 'Enter count if available', errorText: _errors['hasAnimalHospitalCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_animalHospitalCount, 'Animal Hospital (count)', _errors['hasAnimalHospitalCount']),
 
           const SizedBox(height: 12),
           // 5.5 Markets, Community & Services
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.5. Markets, Community & Services (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasCommunityHall'] != null || _errors['hasFairPriceShop'] != null || _errors['hasGroceryMarket'] != null || _errors['hasVegetableMarket'] != null || _errors['hasGrindingMill'] != null || _errors['hasRestaurant'] != null || _errors['hasPublicTransport'] != null || _errors['hasCooperative'] != null || _errors['hasPublicGarden'] != null || _errors['hasCinema'] != null || _errors['hasColdStorage'] != null || _errors['hasSportsGround'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Community Hall *', hasCommunityHall, (val) => setState(() => hasCommunityHall = val), errorText: _errors['hasCommunityHall']),
           if (hasCommunityHall == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _communityHallCount, decoration: InputDecoration(labelText: 'Community Hall (count)', hintText: 'Enter count if available', errorText: _errors['hasCommunityHallCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_communityHallCount, 'Community Hall (count)', _errors['hasCommunityHallCount']),
           _buildRadioGroup('Fair price shop *', hasFairPriceShop, (val) => setState(() => hasFairPriceShop = val), errorText: _errors['hasFairPriceShop']),
           if (hasFairPriceShop == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _fairPriceShopCount, decoration: InputDecoration(labelText: 'Fair price shop (count)', hintText: 'Enter count if available', errorText: _errors['hasFairPriceShopCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_fairPriceShopCount, 'Fair price shop (count)', _errors['hasFairPriceShopCount']),
           _buildRadioGroup('Grocery market *', hasGroceryMarket, (val) => setState(() => hasGroceryMarket = val), errorText: _errors['hasGroceryMarket']),
           if (hasGroceryMarket == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _groceryMarketCount, decoration: InputDecoration(labelText: 'Grocery market (count)', hintText: 'Enter count if available', errorText: _errors['hasGroceryMarketCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_groceryMarketCount, 'Grocery market (count)', _errors['hasGroceryMarketCount']),
           _buildRadioGroup('Vegetable market *', hasVegetableMarket, (val) => setState(() => hasVegetableMarket = val), errorText: _errors['hasVegetableMarket']),
           if (hasVegetableMarket == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _vegetableMarketCount, decoration: InputDecoration(labelText: 'Vegetable market (count)', hintText: 'Enter count if available', errorText: _errors['hasVegetableMarketCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_vegetableMarketCount, 'Vegetable market (count)', _errors['hasVegetableMarketCount']),
           _buildRadioGroup('Grain grinding mill *', hasGrindingMill, (val) => setState(() => hasGrindingMill = val), errorText: _errors['hasGrindingMill']),
           if (hasGrindingMill == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _grindingMillCount, decoration: InputDecoration(labelText: 'Grain grinding mill (count)', hintText: 'Enter count if available', errorText: _errors['hasGrindingMillCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_grindingMillCount, 'Grain grinding mill (count)', _errors['hasGrindingMillCount']),
           _buildRadioGroup('Restaurant/Hotel *', hasRestaurant, (val) => setState(() => hasRestaurant = val), errorText: _errors['hasRestaurant']),
           if (hasRestaurant == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _restaurantCount, decoration: InputDecoration(labelText: 'Restaurant/Hotel (count)', hintText: 'Enter count if available', errorText: _errors['hasRestaurantCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_restaurantCount, 'Restaurant/Hotel (count)', _errors['hasRestaurantCount']),
           _buildRadioGroup('Public Transport System *', hasPublicTransport, (val) => setState(() => hasPublicTransport = val), errorText: _errors['hasPublicTransport']),
           if (hasPublicTransport == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicTransportCount, decoration: InputDecoration(labelText: 'Public Transport System (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicTransportCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_publicTransportCount, 'Public Transport System (count)', _errors['hasPublicTransportCount']),
           _buildRadioGroup('Cooperative Organization *', hasCooperative, (val) => setState(() => hasCooperative = val), errorText: _errors['hasCooperative']),
           if (hasCooperative == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cooperativeCount, decoration: InputDecoration(labelText: 'Cooperative Organization (count)', hintText: 'Enter count if available', errorText: _errors['hasCooperativeCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_cooperativeCount, 'Cooperative Organization (count)', _errors['hasCooperativeCount']),
           _buildRadioGroup('Public Garden/Park *', hasPublicGarden, (val) => setState(() => hasPublicGarden = val), errorText: _errors['hasPublicGarden']),
           if (hasPublicGarden == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _publicGardenCount, decoration: InputDecoration(labelText: 'Public Garden/Park (count)', hintText: 'Enter count if available', errorText: _errors['hasPublicGardenCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_publicGardenCount, 'Public Garden/Park (count)', _errors['hasPublicGardenCount']),
           _buildRadioGroup('Cinema/Theatre *', hasCinema, (val) => setState(() => hasCinema = val), errorText: _errors['hasCinema']),
           if (hasCinema == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _cinemaCount, decoration: InputDecoration(labelText: 'Cinema/Theatre (count)', hintText: 'Enter count if available', errorText: _errors['hasCinemaCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_cinemaCount, 'Cinema/Theatre (count)', _errors['hasCinemaCount']),
           _buildRadioGroup('Cold Storage *', hasColdStorage, (val) => setState(() => hasColdStorage = val), errorText: _errors['hasColdStorage']),
           if (hasColdStorage == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _coldStorageCount, decoration: InputDecoration(labelText: 'Cold Storage (count)', hintText: 'Enter count if available', errorText: _errors['hasColdStorageCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_coldStorageCount, 'Cold Storage (count)', _errors['hasColdStorageCount']),
           _buildRadioGroup('Sports Ground *', hasSportsGround, (val) => setState(() => hasSportsGround = val), errorText: _errors['hasSportsGround']),
           if (hasSportsGround == true)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: TextFormField(controller: _sportsGroundCount, decoration: InputDecoration(labelText: 'Sports Ground (count)', hintText: 'Enter count if available', errorText: _errors['hasSportsGroundCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])),
+            _buildDetailInput(_sportsGroundCount, 'Sports Ground (count)', _errors['hasSportsGroundCount']),
 
           const SizedBox(height: 12),
           // 5.6 Religious/Mortality Facilities
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.6. Religious/Mortality Facilities (Enter count if available)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasTemple'] != null || _errors['hasMosque'] != null || _errors['hasOtherReligious'] != null || _errors['hasCremation'] != null || _errors['hasCemetery'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Temple *', hasTemple, (val) => setState(() => hasTemple = val), errorText: _errors['hasTemple']),
           if (hasTemple == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _templeCount, decoration: InputDecoration(labelText: 'Temple (count)', hintText: 'Enter count if available', errorText: _errors['hasTempleCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_templeCount, 'Temple (count)', _errors['hasTempleCount']),
           _buildRadioGroup('Mosque *', hasMosque, (val) => setState(() => hasMosque = val), errorText: _errors['hasMosque']),
           if (hasMosque == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _mosqueCount, decoration: InputDecoration(labelText: 'Mosque (count)', hintText: 'Enter count if available', errorText: _errors['hasMosqueCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_mosqueCount, 'Mosque (count)', _errors['hasMosqueCount']),
           _buildRadioGroup('Other Religious Place *', hasOtherReligious, (val) => setState(() => hasOtherReligious = val), errorText: _errors['hasOtherReligious']),
           if (hasOtherReligious == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _otherReligiousCount, decoration: InputDecoration(labelText: 'Other Religious Place (count)', hintText: 'Enter count if available', errorText: _errors['hasOtherReligiousCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_otherReligiousCount, 'Other Religious Place (count)', _errors['hasOtherReligiousCount']),
           _buildRadioGroup('Cremation Ground *', hasCremation, (val) => setState(() => hasCremation = val), errorText: _errors['hasCremation']),
           if (hasCremation == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _cremationGroundCount, decoration: InputDecoration(labelText: 'Cremation Ground (count)', hintText: 'Enter count if available', errorText: _errors['hasCremationCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_cremationGroundCount, 'Cremation Ground (count)', _errors['hasCremationCount']),
           _buildRadioGroup('Cemetery *', hasCemetery, (val) => setState(() => hasCemetery = val), errorText: _errors['hasCemetery']),
           if (hasCemetery == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextFormField(controller: _cemeteryCount, decoration: InputDecoration(labelText: 'Cemetery (count)', hintText: 'Enter count if available', errorText: _errors['hasCemeteryCount']), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
-            ),
+            _buildDetailInput(_cemeteryCount, 'Cemetery (count)', _errors['hasCemeteryCount']),
         ]),
         isActive: _currentStep == 4,
       ),
@@ -1452,6 +1368,18 @@ class _VillageFormPageState extends State<VillageFormPage> {
     );
   }
 
+  Widget _buildDetailInput(TextEditingController controller, String label, String? errorText, {String hintText = 'Enter count if available'}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label, hintText: hintText, errorText: errorText),
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      ),
+    );
+  }
+
   Widget _buildRadioGroup(String title, bool? groupValue, ValueChanged<bool?> onChanged, {String? errorText}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1474,10 +1402,12 @@ class _VillageFormPageState extends State<VillageFormPage> {
                 value: true,
                 groupValue: groupValue,
                 onChanged: onChanged,
+                dense: true,
+                visualDensity: VisualDensity.compact,
               ),
             ),
             Expanded(
-              child: RadioListTile<bool>(title: const Text('No'), value: false, groupValue: groupValue, onChanged: onChanged),
+              child: RadioListTile<bool>(title: const Text('No'), value: false, groupValue: groupValue, onChanged: onChanged, dense: true, visualDensity: VisualDensity.compact),
             ),
           ],
         ),
