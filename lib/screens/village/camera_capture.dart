@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -93,6 +95,21 @@ class _CameraCapturePageState extends State<CameraCapturePage> with WidgetsBindi
 
     try {
       final file = await _ctrl!.takePicture();
+      String filePath = file.path;
+
+      if (!kIsWeb) {
+        // Ensure file has .jpg extension (only on mobile/desktop where we can rename)
+        if (!filePath.toLowerCase().endsWith('.jpg') && !filePath.toLowerCase().endsWith('.jpeg')) {
+          final newPath = '$filePath.jpg';
+          try {
+            await File(filePath).rename(newPath);
+            filePath = newPath;
+          } catch (e) {
+            debugPrint('Error renaming file: $e');
+          }
+        }
+      }
+
       // capture location (may fail on web or if permission denied)
       double? lat, lng;
       try {
@@ -108,22 +125,35 @@ class _CameraCapturePageState extends State<CameraCapturePage> with WidgetsBindi
         // ignore geolocation errors, return null coords
       }
 
-      if (lat != null && lng != null) {
+      if (!kIsWeb && lat != null && lng != null) {
         try {
-          final exif = await Exif.fromPath(file.path);
+          final exif = await Exif.fromPath(filePath);
           await exif.writeAttributes({
-            'GPSLatitude': lat,
-            'GPSLongitude': lng,
+            'GPSLatitude': lat.abs(),
+            'GPSLatitudeRef': lat >= 0 ? 'N' : 'S',
+            'GPSLongitude': lng.abs(),
+            'GPSLongitudeRef': lng >= 0 ? 'E' : 'W',
           });
           await exif.close();
+
+          // Verify EXIF data by reading it back
+          final verifyExif = await Exif.fromPath(filePath);
+          final attributes = await verifyExif.getAttributes();
+          debugPrint('Verified EXIF Data: $attributes');
+          await verifyExif.close();
         } catch (e) {
           debugPrint('Error writing EXIF: $e');
         }
       }
 
-      final bytes = await file.readAsBytes();
+      Uint8List bytes;
+      if (kIsWeb) {
+        bytes = await file.readAsBytes();
+      } else {
+        bytes = await File(filePath).readAsBytes();
+      }
       if (!mounted) return;
-      Navigator.of(context).pop({'path': file.path, 'bytes': bytes, 'lat': lat, 'lng': lng});
+      Navigator.of(context).pop({'path': filePath, 'bytes': bytes, 'lat': lat, 'lng': lng});
     } on CameraException catch (e, st) {
       debugPrint('Failed to take picture: $e\n$st');
       if (!mounted) return;

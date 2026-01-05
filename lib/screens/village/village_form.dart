@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gmdcrr/core/config/env.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +15,16 @@ import '../../core/services/village_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/utils/open_url.dart' if (dart.library.html) '../../core/utils/open_url_web.dart';
 import 'camera_capture.dart';
+
+class AttachmentItem {
+  String? selectedType;
+  final TextEditingController otherTypeCtrl = TextEditingController();
+  String? localPath;
+  Uint8List? localBytes;
+  String? remoteFileName;
+  String? remoteUrl;
+  bool isUploading = false;
+}
 
 class VillageFormPage extends StatefulWidget {
   const VillageFormPage({super.key});
@@ -26,9 +39,10 @@ class _VillageFormPageState extends State<VillageFormPage> {
   int? _remoteSurveyId;
   bool _isInitializing = true;
   String? _processingAction; // null, 'draft', or 'submit'
-  List<Map<String, dynamic>> _remoteMedia = [];
   final List<GlobalKey> _stepContentKeys = List.generate(6, (index) => GlobalKey());
   final List<GlobalKey> _stepTitleKeys = List.generate(6, (index) => GlobalKey());
+  final List<AttachmentItem> _attachmentItems = [];
+  final List<String> _attachmentOptions = ['School', 'Anganwadi', 'Panchayat office', 'Bus stop', 'Other'];
 
   // Validation
   final Map<String, String?> _errors = {};
@@ -181,7 +195,6 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
   // Attachments & GPS
   String? _gpsLocation;
-  String? _villagePhotoPath;
 
   @override
   void initState() {
@@ -208,6 +221,9 @@ class _VillageFormPageState extends State<VillageFormPage> {
     _familiesOBCCtrl.removeListener(_computeSocialTotal);
     _familiesSCCtrl.removeListener(_computeSocialTotal);
     _familiesSTCtrl.removeListener(_computeSocialTotal);
+    for (var item in _attachmentItems) {
+      item.otherTypeCtrl.dispose();
+    }
 
     _agriLandCtrl.removeListener(_computeTotalArea);
     _irrigatedCtrl.removeListener(_computeTotalArea);
@@ -400,16 +416,27 @@ class _VillageFormPageState extends State<VillageFormPage> {
                 // store media array if present, but filter out unreachable urls to avoid image 404 exceptions
                 if (d['media'] is List) {
                   final raw = List<Map<String, dynamic>>.from(d['media'] as List);
-                  final available = <Map<String, dynamic>>[];
+                  _attachmentItems.clear();
                   for (final m in raw) {
                     final url = m['url']?.toString();
                     if (url == null) continue;
-                    try {
-                      final ok = await VillageService().checkUrlExists(url);
-                      if (ok) available.add(m);
-                    } catch (_) {}
+                    
+                    final item = AttachmentItem();
+                    item.remoteUrl = url;
+                    item.remoteFileName = m['file_name']?.toString() ?? url.split('/').last;
+                    
+                    String? type = m['file_type']?.toString() ?? m['type']?.toString();
+                    if (type != null) {
+                      final match = _attachmentOptions.firstWhere((opt) => opt.toLowerCase() == type.toLowerCase(), orElse: () => 'Other');
+                      item.selectedType = match;
+                      if (match == 'Other') {
+                        item.otherTypeCtrl.text = type;
+                      }
+                    } else {
+                      item.selectedType = 'Other';
+                    }
+                    _attachmentItems.add(item);
                   }
-                  _remoteMedia = available;
                 }
                 if (mounted) {
                   _villageNameCtrl.text = d['village_name']?.toString() ?? _villageNameCtrl.text;
@@ -610,6 +637,45 @@ class _VillageFormPageState extends State<VillageFormPage> {
     }
   }
 
+  void _addAttachmentItem() {
+    setState(() {
+      _attachmentItems.add(AttachmentItem());
+    });
+  }
+
+  void _removeAttachmentItem(int index) {
+    setState(() {
+      _attachmentItems[index].otherTypeCtrl.dispose();
+      _attachmentItems.removeAt(index);
+    });
+  }
+
+  Future<void> _captureAttachmentPhoto(int index) async {
+    final res = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CameraCapturePage()));
+    if (res != null && mounted) {
+      final path = res['path'] as String?;
+      final bytes = res['bytes'] as Uint8List?;
+      if (path != null && bytes != null) {
+        setState(() {
+          _attachmentItems[index].localPath = path;
+          _attachmentItems[index].localBytes = bytes;
+          _attachmentItems[index].isUploading = true;
+        });
+        try {
+          final fileName = await VillageService().uploadDocument(bytes, path);
+          if (mounted) {
+            setState(() {
+              _attachmentItems[index].remoteFileName = fileName;
+              _attachmentItems[index].isUploading = false;
+            });
+          }
+        } catch (e) {
+          if (mounted) setState(() => _attachmentItems[index].isUploading = false);
+        }
+      }
+    }
+  }
+
   Map<String, dynamic> _collectPayload() => {
     'villageName': _villageNameCtrl.text,
     'gramPanchayat': _gpCtrl.text, // gram_panchayat_office
@@ -723,8 +789,15 @@ class _VillageFormPageState extends State<VillageFormPage> {
     'cremationCount': int.tryParse(_cremationGroundCount.text.trim()),
     'hasCemetery': hasCemetery ?? false,
     'cemeteryCount': int.tryParse(_cemeteryCount.text.trim()),
-    'photo': _villagePhotoPath,
     'gps': _gpsLocation,
+    'file_types': _attachmentItems.where((e) => e.remoteFileName != null).map((e) {
+      final isOther = e.selectedType == 'Other';
+      return {
+        "is_supporting_file": isOther,
+        "file_type": isOther ? e.otherTypeCtrl.text : e.selectedType?.toLowerCase(),
+        "file_name": e.remoteFileName
+      };
+    }).toList(),
   };
 
   Future<void> _saveToLocalDb({required String surveyStatus, required String localDbStatus}) async {
@@ -732,7 +805,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
     final payload = _collectPayload()..['status'] = surveyStatus;
     await LocalDb().updateEntry(_draftId!, {
       'payload': jsonEncode(payload),
-      'imagePath': _villagePhotoPath,
+      'imagePath': null,
       'lat': _lat,
       'lng': _lng,
       'status': localDbStatus, // 'draft' or 'pending'
@@ -747,7 +820,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
     // The local DB status will be updated to 'pending' if upload fails.
     await _saveToLocalDb(surveyStatus: surveyStatus, localDbStatus: 'draft');
     if (_draftId == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Could not save draft locally.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Could not save draft locally.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
       return;
     }
 
@@ -757,26 +830,29 @@ class _VillageFormPageState extends State<VillageFormPage> {
     if (_remoteSurveyId != null && token != null) {
       final payload = _collectPayload()..['status'] = surveyStatus;
       try {
-        uploaded = await VillageService().updateSurvey(_remoteSurveyId!, payload, _villagePhotoPath, bearerToken: token);
+        uploaded = await VillageService().updateSurvey(_remoteSurveyId!, payload, null, bearerToken: token);
       } catch (_) {
         uploaded = false;
       }
     }
     
     String message;
+    Color backgroundColor;
     if (uploaded) {
       // If upload was successful, we can remove the entry from the local DB queue.
       await LocalDb().deleteEntry(_draftId!);
       message = surveyStatus == 'draft' ? 'Draft saved to server successfully' : 'Survey submitted successfully';
+      backgroundColor = Colors.green;
     } else {
       // If upload failed, it remains in the local DB to be synced later.
       // Update the local status to 'pending' so it shows up on the LocalEntriesPage.
       await _saveToLocalDb(surveyStatus: surveyStatus, localDbStatus: 'pending');
       message = 'Saved locally. Will sync with server later.';
+      backgroundColor = Colors.red;
     }
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message, style: const TextStyle(color: Colors.white)), backgroundColor: backgroundColor));
     setState(() => _processingAction = null);
     Navigator.of(context).pop();
   }
@@ -877,7 +953,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
   Future<void> _handleSubmit() async {
     setState(() => _errors.clear());
     if (!_validateForm()) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all mandatory fields.'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all mandatory fields.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
       return;
     }
     await _processSubmission(surveyStatus: 'completed');
@@ -885,22 +961,6 @@ class _VillageFormPageState extends State<VillageFormPage> {
 
   Future<void> _handleSaveDraft() async {
     await _processSubmission(surveyStatus: 'draft');
-  }
-
-  Future<void> _capturePhotoAndTag() async {
-    final res = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CameraCapturePage()));
-    if (res != null && mounted) {
-      _villagePhotoPath = res['path'] as String?;
-      final lat = res['lat'];
-      final lng = res['lng'];
-      if (lat != null && lng != null) {
-        _lat = lat as double?;
-        _lng = lng as double?;
-        _gpsLocation = '$_lat,$_lng';
-      }
-      await _saveToLocalDb(surveyStatus: 'draft', localDbStatus: 'draft'); // Save draft after taking photo
-      setState(() {});
-    }
   }
 
   Future<Position?> getPositionWithFallback({Duration timeout = const Duration(seconds:10)}) async {
@@ -1297,91 +1357,51 @@ class _VillageFormPageState extends State<VillageFormPage> {
           const SizedBox(height: 8),
           TextFormField(decoration: const InputDecoration(labelText: 'GPS Location'), readOnly: true, initialValue: _gpsLocation ?? ''),
           const SizedBox(height: 8),
-          ElevatedButton.icon(onPressed: _capturePhotoAndTag, icon: const Icon(Icons.camera_alt), label: const Text('Capture Photo (camera only)')),
+          const Divider(),
+          const Text('Additional Attachments', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          if (_remoteMedia.isNotEmpty) ...[
-            const Divider(),
-            const Text('Remote attachments', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _remoteMedia.length,
-                itemBuilder: (ctx, i) {
-                  final m = _remoteMedia[i];
-                  final url = m['url']?.toString();
-                  final type = m['type']?.toString();
-                  final name = (m['name'] ?? m['caption'] ?? m['title'])?.toString();
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: InkWell(
-                      onTap: () async {
-                        if (url == null) return;
-                        // For images show full-screen preview, otherwise open URL (web or mobile)
-                        final isImage = url.endsWith('.jpg') || url.endsWith('.jpeg') || url.endsWith('.png') || url.contains('image');
-                        if (isImage) {
-                          if (!mounted) return;
-                          showGeneralDialog<void>(
-                            context: context,
-                            barrierDismissible: true,
-                            barrierLabel: 'Dismiss',
-                            transitionDuration: const Duration(milliseconds: 250),
-                            pageBuilder: (ctx, animation, secondaryAnimation) => BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Dialog(
-                                insetPadding: const EdgeInsets.all(8),
-                                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                  Stack(children: [
-                                    SizedBox(height: 48, child: Align(alignment: Alignment.topRight, child: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(ctx).pop()))),
-                                  ]),
-                                  Expanded(
-                                    child: InteractiveViewer(
-                                      panEnabled: true,
-                                      minScale: 0.5,
-                                      maxScale: 4.0,
-                                      child: Image.network(
-                                        url,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (c, e, s) => const Center(child: Icon(Icons.broken_image, size: 48)),
-                                      ),
-                                    ),
-                                  ),
-                                  if (name != null) Padding(padding: const EdgeInsets.all(8.0), child: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis, maxLines: 2)),
-                                  Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(type ?? 'image', style: const TextStyle(fontSize: 12, color: Colors.black54))),
-                                ]),
-                              ),
-                            ),
-                            transitionBuilder: (ctx, animation, secondaryAnimation, child) {
-                              return FadeTransition(opacity: animation, child: child);
-                            },
-                          );
-                        } else {
-                          await openUrl(url);
-                        }
-                      },
-                      child: Container(
-                        width: 160,
-                        color: Colors.grey[200],
-                        child: Column(children: [
-                          Expanded(child: url != null && (url.endsWith('.jpg') || url.endsWith('.jpeg') || url.endsWith('.png')) ? Image.network(
-                            url,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, st) => const Center(child: Icon(Icons.broken_image)),
-                          ) : const Icon(Icons.insert_drive_file, size: 64)),
-                          Padding(padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0), child: Column(children: [
-                            if (name != null) Text(name, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 1),
-                            const SizedBox(height: 2),
-                            Text(type ?? 'file', style: const TextStyle(fontSize: 11, color: Colors.black54)),
-                          ])),
-                        ]),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _attachmentItems.length,
+            itemBuilder: (context, index) {
+              final item = _attachmentItems[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: item.selectedType,
+                          hint: const Text('Select Type'),
+                          items: _attachmentOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                          onChanged: (val) => setState(() => item.selectedType = val),
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+                      IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _removeAttachmentItem(index)),
+                    ]),
+                    if (item.selectedType == 'Other') TextFormField(controller: item.otherTypeCtrl, decoration: const InputDecoration(labelText: 'Specify Type')),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      ElevatedButton.icon(onPressed: item.isUploading ? null : () => _captureAttachmentPhoto(index), icon: const Icon(Icons.camera_alt), label: const Text('Capture Photo')),
+                      const SizedBox(width: 8),
+                      if (item.isUploading) const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) else if (item.remoteFileName != null) const Icon(Icons.check_circle, color: Colors.green)
+                    ]),
+                    if (item.localBytes != null)
+                      Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.memory(item.localBytes!, height: 100, width: 100, fit: BoxFit.cover))
+                    else if (item.localPath != null && !kIsWeb)
+                      Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.file(File(item.localPath!), height: 100, width: 100, fit: BoxFit.cover)),
+                    if (item.remoteUrl != null && item.localBytes == null && item.localPath == null)
+                      Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.network(item.remoteUrl!, height: 100, width: 100, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image))),
+                  ]),
+                ),
+              );
+            },
+          ),
+          ElevatedButton.icon(onPressed: _addAttachmentItem, icon: const Icon(Icons.add), label: const Text('Add new attachment')),
+          const SizedBox(height: 8),
           const SizedBox(height: 8),
         ]),
         isActive: _currentStep == 5,

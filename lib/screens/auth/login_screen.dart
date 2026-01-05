@@ -46,6 +46,18 @@ class _LoginScreenState extends State<LoginScreen> {
   
   if (error == null) {
     // Success
+    try {
+      final token = await authService.getToken();
+      if (token != null && !authService.isTokenValid(token)) {
+        setState(() {
+          _loading = false;
+          _errorMessage = 'Session expired. Please login again.';
+        });
+        await authService.logout();
+        return;
+      }
+    } catch (_) {}
+
     if (!mounted) return;
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
   } else {
@@ -55,7 +67,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 }
-
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Image.asset(
+                  'assets/icon/app_icon.png',
+                  height: 100,
+                ),
+                const SizedBox(height: 24),
                 Text('Login', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 16),
                 TextFormField(

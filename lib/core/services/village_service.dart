@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:path/path.dart' as p;
 import '../config/env.dart';
 import 'auth_service.dart';
 import '../utils/url_builder.dart';
@@ -28,6 +30,38 @@ class VillageService {
       if (res.statusCode == 200) return res.data as Map<String, dynamic>?;
     } catch (e) {
       // ignore
+    }
+    return null;
+  }
+
+  /// Uploads a document/image for the village survey.
+  Future<String?> uploadDocument(Uint8List bytes, String filePath) async {
+    try {
+      String fileName = p.basename(filePath);
+      if (!fileName.toLowerCase().endsWith('.jpg') &&
+          !fileName.toLowerCase().endsWith('.jpeg') &&
+          !fileName.toLowerCase().endsWith('.png')) {
+        fileName = '$fileName.jpg';
+      }
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: fileName),
+      });
+
+      final bearerToken = await _authService.getToken();
+      final headers = <String, dynamic>{'accept': '*/*'};
+      if (bearerToken != null && bearerToken.isNotEmpty) headers['Authorization'] = 'Bearer $bearerToken';
+
+      final res = await _dio.post(
+        UrlBuilder.build('village-survey/upload-document'),
+        data: formData,
+        options: Options(headers: headers),
+      );
+
+      if (res.statusCode == 201 && res.data != null) {
+        return res.data['file_name'] as String?;
+      }
+    } catch (e) {
+      print('Error uploading document: $e');
     }
     return null;
   }
@@ -209,6 +243,10 @@ class VillageService {
           map['lat'] = double.tryParse(gps[0]);
           map['lon'] = double.tryParse(gps[1]);
         }
+      }
+
+      if (payload['file_types'] != null) {
+        map['file_types'] = payload['file_types'];
       }
 
       // Attachments & image file field (base64 encoded for JSON)
