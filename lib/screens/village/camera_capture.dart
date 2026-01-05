@@ -157,8 +157,8 @@ class _CameraCapturePageState extends State<CameraCapturePage> with WidgetsBindi
     } on CameraException catch (e, st) {
       debugPrint('Failed to take picture: $e\n$st');
       if (!mounted) return;
-      // show a simple snackbar then return to caller with null
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to capture photo')));
+      // show a simple snackbar then return to caller with null. Added white text color for visibility.
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to capture photo', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
       Navigator.of(context).pop(null);
     }
   }
