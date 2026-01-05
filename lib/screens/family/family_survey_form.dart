@@ -125,6 +125,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   String? _residenceAuthorized;
   String? _residenceOwnerTenant;
   final _residenceTotalRoomsCtrl = TextEditingController();
+  final _residenceFloorsCtrl = TextEditingController();
   String? _residencePakkaKachha;
   String? _residenceRoofType;
   final _residencePlotAreaCtrl = TextEditingController();
@@ -375,6 +376,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     }
     _residenceAgeCtrl.dispose();
     _residenceTotalRoomsCtrl.dispose();
+    _residenceFloorsCtrl.dispose();
     _residencePlotAreaCtrl.dispose();
     _residenceConstructionAreaCtrl.dispose();
 
@@ -717,6 +719,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         _residenceAuthorized = (accommodation['is_authorized'] == true) ? 'Yes' : 'No';
         _residenceOwnerTenant = accommodation['ownership']?.toString();
         _residenceTotalRoomsCtrl.text = accommodation['total_rooms']?.toString() ?? '';
+        _residenceFloorsCtrl.text = accommodation['no_of_floors']?.toString() ?? '';
         _residencePakkaKachha = accommodation['house_type']?.toString();
         _residenceRoofType = accommodation['roof_type']?.toString();
         _residencePlotAreaCtrl.text = accommodation['land_area']?.toString() ?? '';
@@ -955,6 +958,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "authorized": _residenceAuthorized == 'Yes',
         "ownership": _residenceOwnerTenant,
         "total_rooms": int.tryParse(_residenceTotalRoomsCtrl.text),
+        "no_of_floors": int.tryParse(_residenceFloorsCtrl.text),
         "house_type": _residencePakkaKachha,
         "roof_type": _residenceRoofType,
         "land_area": double.tryParse(_residencePlotAreaCtrl.text),
@@ -1409,7 +1413,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   Widget _buildReviewSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-      child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+       child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
     );
   }
 
@@ -1431,7 +1435,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   List<Step> _getSteps() {
     return [
       Step(
-        title: Container(key: _stepTitleKeys[0], child: const Text('1. Identity & Family')),
+        title: Container(key: _stepTitleKeys[0], child: const Text('1. Identity & Family', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Form(
           key: _step1Key,
           child: Column(key: _stepContentKeys[0], crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1466,7 +1470,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 0 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[1], child: const Text('2. Residence & Amenities')),
+        title: Container(key: _stepTitleKeys[1], child: const Text('2. Residence & Amenities', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Form(
           key: _step2Key,
           child: Column(key: _stepContentKeys[1], crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1480,9 +1484,21 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             const SizedBox(height: 12),
             TextFormField(controller: _residenceTotalRoomsCtrl, decoration: const InputDecoration(labelText: 'Total No. of rooms'), keyboardType: TextInputType.number, validator: _validateRequired),
             const SizedBox(height: 12),
-            _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() { _residencePakkaKachha = val; })),
+            TextFormField(controller: _residenceFloorsCtrl, decoration: const InputDecoration(labelText: 'No. of floors'), keyboardType: TextInputType.number, validator: _validateRequired),
             const SizedBox(height: 12),
-            _buildDropdown('Type of Roof', _residenceRoofType, ['RCC', 'Sheets', 'Tubes'], (val) => setState(() { _residenceRoofType = val; })),
+            _buildDropdown('House Type', _residencePakkaKachha, ['Pakka', 'Kachha'], (val) => setState(() {
+              _residencePakkaKachha = val;
+              _residenceRoofType = null;
+            })),
+            const SizedBox(height: 12),
+            _buildDropdown(
+              'Type of Roof',
+              (_residencePakkaKachha == 'Pakka' && ['RCC', 'Tin Sheet', 'Clay Tile'].contains(_residenceRoofType)) || (_residencePakkaKachha == 'Kachha' && ['Tin Sheet', 'Clay Tile'].contains(_residenceRoofType)) ? _residenceRoofType : null,
+              _residencePakkaKachha == 'Pakka'
+                  ? ['RCC', 'Tin Sheet', 'Clay Tile']
+                  : (_residencePakkaKachha == 'Kachha' ? ['Tin Sheet', 'Clay Tile'] : []),
+              (val) => setState(() { _residenceRoofType = val; })
+            ),
             const SizedBox(height: 12),
             TextFormField(controller: _residencePlotAreaCtrl, decoration: const InputDecoration(labelText: 'Land/Plot Area (Sq. Meters)'), keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _validateRequired),
             const SizedBox(height: 12),
@@ -1528,7 +1544,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 1 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[2], child: const Text('3. Land & Tree Assets')),
+        title: Container(key: _stepTitleKeys[2], child: const Text('3. Land & Tree Assets', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Form(
           key: _step3Key,
           child: Column(key: _stepContentKeys[2], crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1554,7 +1570,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 2 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[3], child: const Text('4. Income & Other Assets')),
+        title: Container(key: _stepTitleKeys[3], child: const Text('4. Income & Other Assets', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Form(
           key: _step4Key, 
           child: Column(key: _stepContentKeys[3], crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1594,7 +1610,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 3 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[4], child: const Text('5. Finance & Documents')),
+        title: Container(key: _stepTitleKeys[4], child: const Text('5. Finance & Documents', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Form(
           key: _step5Key,
           child: Column(key: _stepContentKeys[4], crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1674,7 +1690,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         state: _currentStep > 4 ? StepState.complete : StepState.indexed,
       ),
       Step(
-        title: Container(key: _stepTitleKeys[5], child: const Text('6. Review & Submit')),
+        title: Container(key: _stepTitleKeys[5], child: const Text('6. Review & Submit', style: TextStyle(color: Color(0xFFe39419), fontWeight: FontWeight.bold))),
         content: Column(
           key: _stepContentKeys[5],
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1726,6 +1742,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             _buildReviewRow('Residence Age', '${_residenceAgeCtrl.text} years'),
             _buildReviewRow('Is Authorized?', _residenceAuthorized),
             _buildReviewRow('Ownership', _residenceOwnerTenant),
+            _buildReviewRow('No. of floors', _residenceFloorsCtrl.text),
             _buildReviewRow('House Type', _residencePakkaKachha),
             _buildReviewRow('Toilet Facilities', _residenceToiletFacilities),
             if (_housePhotoUrl != null)
@@ -1895,7 +1912,16 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   ],
                 ),
               )
-            : Stepper(
+            : Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                    labelStyle: const TextStyle(fontSize: 14),
+                    floatingLabelStyle: const TextStyle(fontSize: 18),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    isDense: true,
+                  ),
+                ),
+                child: Stepper(
                 type: StepperType.vertical,
                 currentStep: _currentStep,
                 onStepContinue: _onStepContinue,
@@ -1923,6 +1949,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   return const SizedBox.shrink();
                 },
               ),
+            ),
         bottomNavigationBar: _isProcessing
             ? const LinearProgressIndicator()
             : SafeArea(

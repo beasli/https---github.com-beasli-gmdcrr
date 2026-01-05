@@ -74,9 +74,18 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                labelStyle: const TextStyle(fontSize: 14),
+                floatingLabelStyle: const TextStyle(fontSize: 18),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                isDense: true,
+              ),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Image.asset(
@@ -124,6 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       : const Text('Login'),
                 ),
               ],
+            ),
             ),
           ),
         ),
