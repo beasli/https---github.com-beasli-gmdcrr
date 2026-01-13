@@ -23,7 +23,7 @@ class FamilyMember {
   TextEditingController nameCtrl = TextEditingController();
   String? relationship;
   String? gender;
-  TextEditingController ageCtrl = TextEditingController();
+  TextEditingController dobCtrl = TextEditingController();
   String? caste;
   String? studying;
   String? education;
@@ -432,7 +432,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _disposeMemberControllers(FamilyMember member) {
     // photoUrl is just a string, no controller
     member.nameCtrl.dispose();
-    member.ageCtrl.dispose();
+    member.dobCtrl.dispose();
     member.bplCardCtrl.dispose();
     member.aadharCtrl.dispose();
     member.mobileCtrl.dispose();
@@ -695,7 +695,16 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             if (apiGender.toLowerCase() == 'male') member.gender = 'M';
             if (apiGender.toLowerCase() == 'female') member.gender = 'F';
           }
-          member.ageCtrl.text = memberData['age']?.toString() ?? '';
+          if (memberData['dob'] != null) {
+            var dob = memberData['dob'].toString();
+            if (dob.contains('T')) dob = dob.split('T')[0]; // Handle ISO format
+            final parts = dob.split('-');
+            if (parts.length == 3) {
+              member.dobCtrl.text = '${parts[2]}/${parts[1]}/${parts[0]}';
+            } else {
+              member.dobCtrl.text = dob;
+            }
+          }
           member.maritalStatus = memberData['marital_status']?.toString();
           member.religion = memberData['religion']?.toString().trim();
           member.caste = memberData['caste_category']?.toString();
@@ -939,7 +948,14 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "relationship_with_head": m.relationship,
         // Map form value ('M'/'F') to API gender ('Male'/'Female')
         "gender": (m.gender == 'M') ? 'Male' : (m.gender == 'F' ? 'Female' : null),
-        "age": int.tryParse(m.ageCtrl.text),
+        "dob": () {
+          if (m.dobCtrl.text.isEmpty) return null;
+          final parts = m.dobCtrl.text.split('/');
+          if (parts.length == 3) {
+            return '${parts[2]}-${parts[1]}-${parts[0]}';
+          }
+          return m.dobCtrl.text;
+        }(),
         "marital_status": m.maritalStatus,
         "religion": m.religion,
         "caste_category": m.caste,
@@ -1191,7 +1207,44 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             validator: (v) => v == null ? 'Required' : null,
           )),
           const SizedBox(width: 8),
-          Expanded(child: TextFormField(controller: member.ageCtrl, decoration: const InputDecoration(labelText: 'Age (years)'), keyboardType: TextInputType.number, validator: _validateRequired)),
+          Expanded(
+            child: TextFormField(
+              controller: member.dobCtrl,
+              decoration: const InputDecoration(
+                labelText: 'DOB (DD/MM/YYYY)',
+                suffixIcon: Icon(Icons.calendar_today),
+              ),
+              readOnly: true,
+              onTap: () async {
+                final now = DateTime.now();
+                final DateTime? picked = await showGeneralDialog<DateTime>(
+                  context: context,
+                  barrierDismissible: true,
+                  barrierLabel: 'Dismiss',
+                  transitionDuration: const Duration(milliseconds: 250),
+                  pageBuilder: (context, animation, secondaryAnimation) => BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: Theme.of(context).colorScheme.copyWith(surface: Colors.white),
+                        dialogBackgroundColor: Colors.white,
+                      ),
+                      child: DatePickerDialog(initialDate: now, firstDate: DateTime(1900), lastDate: now),
+                    ),
+                  ),
+                  transitionBuilder: (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                );
+                if (picked != null) {
+                  setState(() {
+                    member.dobCtrl.text = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+                  });
+                }
+              },
+              validator: _validateRequired,
+            ),
+          ),
         ]),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
@@ -1729,7 +1782,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                     ),
                    _buildReviewRow('Relationship', _familyMembers[i].relationship),
                   _buildReviewRow('Gender', _familyMembers[i].gender),
-                  _buildReviewRow('Age', _familyMembers[i].ageCtrl.text),
+                  _buildReviewRow('DOB', _familyMembers[i].dobCtrl.text),
                   _buildReviewRow('Marital Status', _familyMembers[i].maritalStatus),
                   _buildReviewRow('Photo', _familyMembers[i].photoUrl != null ? 'Captured' : 'Not Captured'),
                   _buildReviewRow('Aadhar No.', _familyMembers[i].aadharCtrl.text),
