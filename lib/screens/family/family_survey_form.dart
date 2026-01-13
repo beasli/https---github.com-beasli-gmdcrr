@@ -24,7 +24,7 @@ class FamilyMember {
   String? relationship;
   String? gender;
   TextEditingController dobCtrl = TextEditingController();
-  String? caste;
+  TextEditingController casteCtrl = TextEditingController();
   String? studying;
   String? education;
   String? maritalStatus;
@@ -433,6 +433,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     // photoUrl is just a string, no controller
     member.nameCtrl.dispose();
     member.dobCtrl.dispose();
+    member.casteCtrl.dispose();
     member.bplCardCtrl.dispose();
     member.aadharCtrl.dispose();
     member.mobileCtrl.dispose();
@@ -707,7 +708,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           }
           member.maritalStatus = memberData['marital_status']?.toString();
           member.religion = memberData['religion']?.toString().trim();
-          member.caste = memberData['caste_category']?.toString();
+          member.casteCtrl.text = memberData['caste']?.toString() ?? '';
           member.handicapped = (memberData['is_handicapped'] == true) ? 'Yes' : 'No';
           member.aadharCtrl.text = memberData['aadhar_no']?.toString() ?? '';
           member.mobileCtrl.text = memberData['mobile_no']?.toString() ?? '';
@@ -958,7 +959,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         }(),
         "marital_status": m.maritalStatus,
         "religion": m.religion,
-        "caste_category": m.caste,
+        "caste": m.casteCtrl.text,
         "handicapped": m.handicapped == 'Yes',
         "aadhar_no": m.aadharCtrl.text,
         "mobile_no": m.mobileCtrl.text,
@@ -1265,13 +1266,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           validator: _validateRequired,
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          value: member.caste,
-          decoration: const InputDecoration(labelText: 'Caste'),
-          items: ['General', 'OBC', 'SC', 'ST'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-          onChanged: (val) => setState(() { member.caste = val; }),
-          validator: (v) => v == null ? 'Required' : null,
-        ),
+        TextFormField(controller: member.casteCtrl, decoration: const InputDecoration(labelText: 'Caste (e.g. Patel)'), validator: (v) => isHead ? _validateRequired(v) : null),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: member.handicapped,
