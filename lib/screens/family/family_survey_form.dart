@@ -555,7 +555,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
 
     // Show a snackbar to indicate upload is in progress
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Uploading photo...'), duration: Duration(seconds: 1)),
+      const SnackBar(content: Text('Uploading photo...', style: TextStyle(color: Colors.white)), duration: Duration(seconds: 1)),
     );
 
     final remoteUrl = await _surveyService.uploadDocument(photoBytes, photoPath);
@@ -572,7 +572,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo upload failed. Please try again.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Photo upload failed. Please try again.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
       );
     }
   }
@@ -589,7 +589,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     } else {
       final position = await LocationService.getPositionWithFallback();
       if (position == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to get location. Please ensure GPS is enabled.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to get location. Please ensure GPS is enabled.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
         return;
       }
       lat = position.latitude;
@@ -614,7 +614,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not find a nearby village.'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('Could not find a nearby village.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.orange),
       );
     } else {
       // The widget was disposed during the async operation.
@@ -644,7 +644,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load survey data.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Failed to load survey data.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
       );
       // Pop the screen if data loading fails, as editing is not possible.
       Navigator.of(context).pop();
@@ -876,7 +876,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields correctly.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Please fill all required fields correctly.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
       );
     }
   }
@@ -907,7 +907,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     if (_signatureController.isNotEmpty && signatureUrl == null) {
       // Failed to upload a required signature
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to upload signature. Please try again.'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Failed to upload signature. Please try again.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
       );
       return null;
     }
@@ -1063,7 +1063,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to submit to server. Data is saved locally as a draft.'),
+            content: Text('Failed to submit to server. Data is saved locally as a draft.', style: TextStyle(color: Colors.white)),
             backgroundColor: Colors.orange,
           ),
         );
@@ -1094,7 +1094,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to save draft to server. Data is saved locally.'),
+            content: Text('Failed to save draft to server. Data is saved locally.', style: TextStyle(color: Colors.white)),
             backgroundColor: Colors.orange,
           ),
         );
