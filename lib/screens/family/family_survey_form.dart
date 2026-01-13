@@ -27,6 +27,7 @@ class FamilyMember {
   TextEditingController casteCtrl = TextEditingController();
   String? studying;
   String? education;
+  String? occupation;
   String? maritalStatus;
   String? religion;
   TextEditingController bplCardCtrl = TextEditingController();
@@ -263,6 +264,16 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     'Jewish',
     'Parsi',
     'Other'
+  ];
+
+  final List<String> _occupationOptions = [
+    'Govt Job',
+    'Private Job',
+    'Farming',
+    'Business',
+    'Agriworker',
+    'Utility Service Worker',
+    'None'
   ];
 
   // A helper function for simple validation
@@ -714,6 +725,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           member.mobileCtrl.text = memberData['mobile_no']?.toString() ?? '';
           member.education = memberData['education_qualification']?.toString();
           member.studying = (memberData['studying_in_progress'] == true) ? 'Yes' : 'No';
+          member.occupation = memberData['occupation']?.toString();
           member.artisanSkillCtrl.text = memberData['artisan_details']?.toString() ?? '';
           member.skillTrainingInterest = (memberData['interested_in_training'] == true) ? 'Yes' : 'No';
           member.photoUrl = memberData['photo_url'] as String?;
@@ -965,6 +977,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         "mobile_no": m.mobileCtrl.text,
         "education_qualification": m.education,
         "studying_in_progress": m.studying == 'Yes',
+        "occupation": m.occupation,
         "artisan_details": m.artisanSkillCtrl.text,
         "interested_in_training": m.skillTrainingInterest == 'Yes',
         "photo_url": await _resolveImageUrl(m.photoUrl, forLocalSave: forLocalSave),
@@ -1201,7 +1214,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
-            value: member.gender,
+            value: ['M', 'F'].contains(member.gender) ? member.gender : null,
             decoration: const InputDecoration(labelText: 'Gender'),
             items: ['M', 'F'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
             onChanged: (val) => setState(() { member.gender = val; }),
@@ -1249,7 +1262,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ]),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: member.maritalStatus,
+          value: ['Married', 'Unmarried', 'Widow/Widower'].contains(member.maritalStatus) ? member.maritalStatus : null,
           decoration: const InputDecoration(labelText: 'Marital Status'),
           items: ['Married', 'Unmarried', 'Widow/Widower'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
           onChanged: (val) => setState(() { member.maritalStatus = val; }),
@@ -1269,7 +1282,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         TextFormField(controller: member.casteCtrl, decoration: const InputDecoration(labelText: 'Caste (e.g. Patel)'), validator: (v) => isHead ? _validateRequired(v) : null),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: member.handicapped,
+          value: ['Yes', 'No'].contains(member.handicapped) ? member.handicapped : null,
           decoration: const InputDecoration(labelText: 'Handicapped'),
           items: ['Yes', 'No'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
           onChanged: (val) => setState(() { member.handicapped = val; }),
@@ -1296,17 +1309,25 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: member.studying,
+          value: ['Yes', 'No'].contains(member.studying) ? member.studying : null,
           decoration: const InputDecoration(labelText: 'Studying in progress?'),
           items: ['Yes', 'No'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
           onChanged: (val) => setState(() { member.studying = val; }),
           validator: (v) => v == null ? 'Required' : null,
         ),
         const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: _occupationOptions.contains(member.occupation) ? member.occupation : null,
+          decoration: const InputDecoration(labelText: 'Occupation'),
+          items: _occupationOptions.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          onChanged: (val) => setState(() { member.occupation = val; }),
+          validator: _validateRequired,
+        ),
+        const SizedBox(height: 12),
         TextFormField(controller: member.artisanSkillCtrl, decoration: const InputDecoration(labelText: 'Artisan/Skill Details')),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: member.skillTrainingInterest,
+          value: ['Yes', 'No'].contains(member.skillTrainingInterest) ? member.skillTrainingInterest : null,
           decoration: const InputDecoration(labelText: 'Interested in Skill Training?'),
           items: ['Yes', 'No'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
           // TODO: This should probably be a boolean in the model
@@ -1782,6 +1803,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                   _buildReviewRow('Photo', _familyMembers[i].photoUrl != null ? 'Captured' : 'Not Captured'),
                   _buildReviewRow('Aadhar No.', _familyMembers[i].aadharCtrl.text),
                   _buildReviewRow('Mobile No.', _familyMembers[i].mobileCtrl.text),
+                  _buildReviewRow('Occupation', _familyMembers[i].occupation),
                 ],
               ),
 
@@ -1881,7 +1903,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   // Helper widget to build dropdowns consistently
   Widget _buildDropdown(String label, String? value, List<String> items, ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
-      value: value,
+      value: items.contains(value) ? value : null,
       decoration: InputDecoration(labelText: label),
       items: items.map((String item) {
         return DropdownMenuItem<String>(value: item, child: Text(item));
