@@ -21,6 +21,8 @@ class FamilyMember {
   final UniqueKey key = UniqueKey();
   final GlobalKey reviewKey = GlobalKey();
   TextEditingController nameCtrl = TextEditingController();
+  String? relation;
+  TextEditingController relativeNameCtrl = TextEditingController();
   String? relationship;
   String? gender;
   TextEditingController dobCtrl = TextEditingController();
@@ -276,6 +278,15 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     'None'
   ];
 
+  List<String> _getRelationOptions(String? gender) {
+    if (gender == 'M') {
+      return ['Son of', 'Husband of', 'Father of', 'Care of'];
+    } else if (gender == 'F') {
+      return ['Daughter of', 'Wife of', 'Mother of', 'Care of'];
+    }
+    return ['Son of', 'Daughter of', 'Wife of', 'Husband of', 'Father of', 'Mother of', 'Care of'];
+  }
+
   // A helper function for simple validation
   String? _validateRequired(String? value) {
     if (value == null || value.isEmpty) {
@@ -443,6 +454,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   void _disposeMemberControllers(FamilyMember member) {
     // photoUrl is just a string, no controller
     member.nameCtrl.dispose();
+    member.relativeNameCtrl.dispose();
     member.dobCtrl.dispose();
     member.casteCtrl.dispose();
     member.bplCardCtrl.dispose();
@@ -700,6 +712,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         for (var memberData in members) {
           final member = FamilyMember();
           member.nameCtrl.text = memberData['name']?.toString() ?? '';
+          member.relation = memberData['relation']?.toString();
+          member.relativeNameCtrl.text = memberData['relative_name']?.toString() ?? '';
           member.relationship = memberData['relationship_with_head']?.toString();
           // Map API gender ('Male'/'Female') to form value ('M'/'F')
           final apiGender = memberData['gender']?.toString();
@@ -958,6 +972,8 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
       },
       "members": await Future.wait(_familyMembers.map((m) async => {
         "name": m.nameCtrl.text,
+        "relation": m.relation,
+        "relative_name": m.relativeNameCtrl.text,
         "relationship_with_head": m.relationship,
         // Map form value ('M'/'F') to API gender ('Male'/'Female')
         "gender": (m.gender == 'M') ? 'Male' : (m.gender == 'F' ? 'Female' : null),
@@ -1214,6 +1230,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
+            isExpanded: true,
             value: ['M', 'F'].contains(member.gender) ? member.gender : null,
             decoration: const InputDecoration(labelText: 'Gender'),
             items: ['M', 'F'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
@@ -1225,7 +1242,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             child: TextFormField(
               controller: member.dobCtrl,
               decoration: const InputDecoration(
-                labelText: 'DOB (DD/MM/YYYY)',
+                labelText: 'DOB',
                 suffixIcon: Icon(Icons.calendar_today),
               ),
               readOnly: true,
@@ -1260,6 +1277,23 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             ),
           ),
         ]),
+        if (!isHead) ...[
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: DropdownButtonFormField<String>(
+              isExpanded: true,
+              value: _getRelationOptions(member.gender).contains(member.relation) ? member.relation : null,
+              decoration: const InputDecoration(labelText: 'Relation'),
+              items: _getRelationOptions(member.gender).map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              onChanged: (val) => setState(() { member.relation = val; }),
+              validator: _validateRequired,
+            )),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(controller: member.relativeNameCtrl, decoration: const InputDecoration(labelText: 'Relative Name'), validator: _validateRequired),
+            ),
+          ]),
+        ],
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: ['Married', 'Unmarried', 'Widow/Widower'].contains(member.maritalStatus) ? member.maritalStatus : null,
@@ -1791,6 +1825,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
                 title: Text(i == 0 ? 'Head of Family' : 'Family Member ${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 children: [
                   _buildReviewRow('Name', _familyMembers[i].nameCtrl.text),
+                  if (i > 0) _buildReviewRow('Relative', '${_familyMembers[i].relation ?? ''} ${_familyMembers[i].relativeNameCtrl.text}'),
                   if (_familyMembers[i].photoUrl != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1903,6 +1938,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   // Helper widget to build dropdowns consistently
   Widget _buildDropdown(String label, String? value, List<String> items, ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       value: items.contains(value) ? value : null,
       decoration: InputDecoration(labelText: label),
       items: items.map((String item) {
