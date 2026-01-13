@@ -1137,6 +1137,13 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           await _localDb.deleteFamilySurvey(_localDbId!);
         }
         Navigator.of(context).pop(true); // Pop with a result to signal a refresh
+      } else if (result['statusCode'] == 409) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aadhar number already registered for Head of Family.', style: TextStyle(color: Colors.white)),
+            backgroundColor: Colors.red,
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1145,6 +1152,38 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _validateAadharOnServer(String aadharNo) async {
+    if (aadharNo.length != 12) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please enter a valid 12-digit Aadhar number.', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.orange));
+      return;
+    }
+
+    // Only pass server ID (positive)
+    int? serverId;
+    if (widget.familySurveyId != null && widget.familySurveyId! > 0) {
+      serverId = widget.familySurveyId;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await _surveyService.validateAadhar(aadharNo, familyId: serverId);
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // Dismiss loader
+
+    if (result['duplicate'] == false) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Aadhar no. is available.', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.green));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Validation failed.', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red));
     }
   }
 
@@ -1325,7 +1364,23 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         const SizedBox(height: 16),
         if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
         if (isHead) const SizedBox(height: 8),
-        TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: ElevatedButton(
+                onPressed: () => _validateAadharOnServer(member.aadharCtrl.text),
+                style: ElevatedButton.styleFrom(minimumSize: const Size(0, 36), padding: const EdgeInsets.symmetric(horizontal: 12)),
+                child: const Text('Validate', style: TextStyle(fontSize: 12)),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 12),
         TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: (v) => _validateMobile(v, isMandatory: isHead)),
         const SizedBox(height: 12),

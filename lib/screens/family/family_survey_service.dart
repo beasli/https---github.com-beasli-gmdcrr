@@ -75,10 +75,10 @@ class FamilySurveyService {
         };
       }
 
-      return {'success': false};
+      return {'success': false, 'statusCode': response.statusCode};
     } on DioException catch (e) {
       print('Error submitting survey: ${e.response?.data ?? e.message}');
-      return {'success': false};
+      return {'success': false, 'statusCode': e.response?.statusCode};
     }
   }
 
@@ -130,5 +130,45 @@ class FamilySurveyService {
       print('Error fetching user surveys by village: ${e.response?.data ?? e.message}');
     }
     return []; // Return an empty list on failure or if data is not in the expected format.
+  }
+
+  /// Validates an Aadhar number against the server.
+  Future<Map<String, dynamic>> validateAadhar(String aadharNo, {int? familyId}) async {
+    try {
+      final headers = <String, dynamic>{
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+      };
+
+      final data = {
+        "aadhar_no": aadharNo,
+        if (familyId != null) "family_id": familyId,
+      };
+
+      final response = await _dio.post(
+        '$_baseUrl/family-survey/validate-aadhar',
+        data: data,
+        options: Options(headers: headers),
+      );
+
+      if (response.data != null && response.data is Map) {
+        return {
+          'success': true,
+          'duplicate': response.data['duplicate'],
+          'message': response.data['message']
+        };
+      }
+      return {'success': false, 'message': 'Validation failed.'};
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response!.data is Map) {
+        return {
+          'success': true,
+          'duplicate': e.response!.data['duplicate'],
+          'message': e.response!.data['message']
+        };
+      }
+      final msg = e.response?.data['message'] ?? e.message;
+      return {'success': false, 'message': msg};
+    }
   }
 }
