@@ -48,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Location Services Disabled'),
+        title: const Text('Location Services Disabled.'),
         content: const Text('Please enable location services (GPS) to continue.'),
         actions: [
           TextButton(onPressed: () => Geolocator.openLocationSettings(), child: const Text('Settings')),
