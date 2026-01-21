@@ -1,16 +1,38 @@
-# gmdcrr
+# GMDCRR - Village Survey App
 
-A new Flutter project.
+A Flutter application designed for conducting comprehensive village surveys. This application allows surveyors to collect data regarding families, accommodation, land ownership, assets, livestock, income, and expenses.
+
+## Features
+
+- **Family Survey**: Detailed forms for family members, relationships, and demographics.
+- **Asset Management**: Record land details, trees, household assets, and livestock.
+- **Offline Support**: Data is saved locally using SQLite when offline and can be synced when connectivity is available.
+- **Location & Media**: Captures GPS coordinates, photos of assets/members, and digital signatures.
+- **Authentication**: Secure login for surveyors.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK (^3.10.0)
+- Dart SDK
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Installation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+## Build Commands
+
+### Staging Build
+
+To build the release APK for the staging environment, use the following command:
+
+```bash
+flutter build apk --release --dart-define=ENV=staging
+```
+
+This command uses `dart-define` to set the environment variable `ENV` to `staging` during the build process.
