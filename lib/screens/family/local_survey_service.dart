@@ -6,8 +6,9 @@ import 'package:sqflite/sqflite.dart';
 /// Service class for handling local storage of family surveys using SQLite.
 class LocalSurveyService {
   static const _databaseName = "FamilySurvey.db";
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
   static const table = 'family_surveys';
+  static const tableVillages = 'villages';
 
   static const columnId = 'id'; // Corresponds to the server's familySurveyId
   static const columnHeadName = 'head_name';
@@ -32,7 +33,8 @@ class LocalSurveyService {
     String path = join(await getDatabasesPath(), _databaseName);
     return await openDatabase(path,
         version: _databaseVersion,
-        onCreate: _onCreate);
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade);
   }
 
   // SQL code to create the database table
@@ -46,6 +48,25 @@ class LocalSurveyService {
             $columnUpdatedAt TEXT NOT NULL
           )
           ''');
+    await db.execute('''
+          CREATE TABLE $tableVillages (
+            id INTEGER PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+          ''');
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+          CREATE TABLE $tableVillages (
+            id INTEGER PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+          ''');
+    }
   }
 
   /// Inserts a new survey or updates an existing one based on the ID.
@@ -102,5 +123,36 @@ class LocalSurveyService {
   Future<int> delete(int id) async {
     final db = await instance.database;
     return await db.delete(table, where: '$columnId = ?', whereArgs: [id]);
+  }
+
+  /// Saves the village payload to local storage.
+  Future<void> saveVillage(Map<String, dynamic> villageData) async {
+    final db = await instance.database;
+    final village = villageData['data']?['village'];
+    if (village != null && village['id'] != null) {
+      await db.insert(
+        tableVillages,
+        {
+          'id': village['id'],
+          'payload': jsonEncode(villageData),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  /// Retrieves the most recently saved village data.
+  Future<Map<String, dynamic>?> getLastSavedVillage() async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableVillages,
+      orderBy: '$columnUpdatedAt DESC',
+      limit: 1,
+    );
+    if (maps.isNotEmpty) {
+      return jsonDecode(maps.first['payload'] as String) as Map<String, dynamic>;
+    }
+    return null;
   }
 }

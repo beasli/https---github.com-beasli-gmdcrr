@@ -7,6 +7,7 @@ import '../../core/services/local_db.dart';
 import '../../core/services/village_service.dart';
 import 'family_survey_form.dart';
 import 'family_survey_service.dart';
+import 'local_survey_service.dart';
 
 /// A page to display a list of family surveys for the user's current village.
 class FamilySurveyListPage extends StatefulWidget {
@@ -105,8 +106,19 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
     if (!mounted) return;
     setState(() => _loadingMessage = 'Finding nearby village...');
 
-    final villageData = await _villageService.fetchNearbyByLatLng(lat, lon);
+    var villageData = await _villageService.fetchNearbyByLatLng(lat, lon);
+
+    // Fallback to local storage if network fails
+    if (villageData == null) {
+      villageData = await LocalSurveyService.instance.getLastSavedVillage();
+      if (villageData != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Offline mode: Loaded last known village.'), backgroundColor: Colors.orange));
+      }
+    }
+
     if (mounted && villageData?['data']?['village'] != null) {
+      await LocalSurveyService.instance.saveVillage(villageData!);
       final village = villageData!['data']['village'];
       final villageId = village['id'] as int;
       final villageName = village['name'] as String;

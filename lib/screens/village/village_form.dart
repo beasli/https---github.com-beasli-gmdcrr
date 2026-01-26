@@ -14,6 +14,7 @@ import '../../core/services/local_db.dart';
 import '../../core/services/village_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/utils/open_url.dart' if (dart.library.html) '../../core/utils/open_url_web.dart';
+import '../family/local_survey_service.dart';
 import 'camera_capture.dart';
 
 class AttachmentItem {
@@ -393,8 +394,19 @@ class _VillageFormPageState extends State<VillageFormPage> {
   final Position p = pos;
   setState(() { _lat = p.latitude; _lng = p.longitude; _gpsLocation = '$_lat,$_lng'; });
         // Use nearby village API. The service now handles auth internally.
-        final nearby = await VillageService().fetchNearbyByLatLng(_lat!, _lng!);
+        var nearby = await VillageService().fetchNearbyByLatLng(_lat!, _lng!);
+
+        // Fallback to local storage if network fails
+        if (nearby == null) {
+          nearby = await LocalSurveyService.instance.getLastSavedVillage();
+          if (nearby != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Offline mode: Loaded last known village.'), backgroundColor: Colors.orange));
+          }
+        }
+
         if (nearby != null && nearby['data'] != null && nearby['data']['village'] != null) {
+          await LocalSurveyService.instance.saveVillage(nearby);
           final v = nearby['data']['village'];
           // capture remote survey id if present so we can update on submit
           try {
