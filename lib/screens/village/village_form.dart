@@ -716,9 +716,9 @@ class _VillageFormPageState extends State<VillageFormPage> {
     'hasWaterSystem': hasWaterSystem ?? false,
     'waterSystemCount': _waterSystemCount.text.trim(),
     'hasDrainage': hasDrainage ?? false,
-    'drainageSystemCount': int.tryParse(_drainageSystemCount.text.trim()),
+    'drainageSystemCount': _drainageSystemCount.text.trim(),
     'hasElectricity': hasElectricity ?? false,
-    'electricitySystemCount': int.tryParse(_electricitySystemCount.text.trim()),
+    'electricitySystemCount': _electricitySystemCount.text.trim(),
     'hasWasteDisposal': hasWasteDisposal ?? false,
     'wasteDisposalCount': _wasteDisposalCount.text.trim(),
     'hasWaterStorage': hasWaterStorage ?? false,
@@ -1126,22 +1126,22 @@ class _VillageFormPageState extends State<VillageFormPage> {
           InkWell(onTap: () => setState(() => _currentStep = 4), child: Padding(padding: const EdgeInsets.only(top: 8, bottom: 4), child: Text('5.1. Roads, Water & Utilities (Enter length/coverage if Yes)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: (_errors['hasAsphaltRoad'] != null || _errors['hasRawRoad'] != null || _errors['hasWaterSystem'] != null || _errors['hasDrainage'] != null || _errors['hasElectricity'] != null || _errors['hasWasteDisposal'] != null) ? Colors.red : null)))),
           _buildRadioGroup('Approach Asphalt Road *', hasAsphaltRoad, (val) => setState(() => hasAsphaltRoad = val), errorText: _errors['hasAsphaltRoad']),
           if (hasAsphaltRoad == true)
-            _buildDetailInput(_asphaltRoadCount, 'Approach Asphalt Road (Detail/Count)', _errors['hasAsphaltRoadCount'], hintText: 'Enter Detail/Count if available'),
+            _buildDetailInput(_asphaltRoadCount, 'Approach Asphalt Road (Detail/Count)', _errors['hasAsphaltRoadCount'], hintText: 'Enter Detail/Count if available', keyboardType: TextInputType.text, inputFormatters: []),
           _buildRadioGroup('Approach Raw Road *', hasRawRoad, (val) => setState(() => hasRawRoad = val), errorText: _errors['hasRawRoad']),
           if (hasRawRoad == true)
-            _buildDetailInput(_rawRoadCount, 'Approach Raw Road (Detail/Count)', _errors['hasRawRoadCount'], hintText: 'Enter Detail/Count if available'),
+            _buildDetailInput(_rawRoadCount, 'Approach Raw Road (Detail/Count)', _errors['hasRawRoadCount'], hintText: 'Enter Detail/Count if available', keyboardType: TextInputType.text, inputFormatters: []),
           _buildRadioGroup('Water system available *', hasWaterSystem, (val) => setState(() => hasWaterSystem = val), errorText: _errors['hasWaterSystem']),
           if (hasWaterSystem == true)
-            _buildDetailInput(_waterSystemCount, 'Water system (Detail/Count)', _errors['hasWaterSystemCount'], hintText: 'Enter Detail/Count if available'),
+            _buildDetailInput(_waterSystemCount, 'Water system (Detail/Count)', _errors['hasWaterSystemCount'], hintText: 'Enter Detail/Count if available', keyboardType: TextInputType.text, inputFormatters: []),
           _buildRadioGroup('Drainage system available *', hasDrainage, (val) => setState(() => hasDrainage = val), errorText: _errors['hasDrainage']),
           if (hasDrainage == true)
-            _buildDetailInput(_drainageSystemCount, 'Drainage system (Detail/Count)', _errors['hasDrainageCount'], hintText: 'Enter Detail/Count if available'),
+            _buildDetailInput(_drainageSystemCount, 'Drainage system (Detail/Count)', _errors['hasDrainageCount'], hintText: 'Enter Detail/Count if available', keyboardType: TextInputType.text, inputFormatters: []),
           _buildRadioGroup('Electricity system available *', hasElectricity, (val) => setState(() => hasElectricity = val), errorText: _errors['hasElectricity']),
           if (hasElectricity == true)
-            _buildDetailInput(_electricitySystemCount, 'Electricity system (Detail/Count)', _errors['hasElectricityCount'], hintText: 'Enter Detail/Count if available'),
+            _buildDetailInput(_electricitySystemCount, 'Electricity system (Detail/Count)', _errors['hasElectricityCount'], hintText: 'Enter Detail/Count if available', keyboardType: TextInputType.text, inputFormatters: []),
           _buildRadioGroup('Public system for waste disposal *', hasWasteDisposal, (val) => setState(() => hasWasteDisposal = val), errorText: _errors['hasWasteDisposal']),
           if (hasWasteDisposal == true)
-            _buildDetailInput(_wasteDisposalCount, 'Public system for waste disposal (Detail/Count)', _errors['hasWasteDisposalCount'], hintText: 'Enter Detail/Count if available'),
+            _buildDetailInput(_wasteDisposalCount, 'Public system for waste disposal (Detail/Count)', _errors['hasWasteDisposalCount'], hintText: 'Enter Detail/Count if available', keyboardType: TextInputType.text, inputFormatters: []),
 
           const SizedBox(height: 12),
           // 5.2 Public Water Sources
@@ -1388,14 +1388,14 @@ class _VillageFormPageState extends State<VillageFormPage> {
     );
   }
 
-  Widget _buildDetailInput(TextEditingController controller, String label, String? errorText, {String hintText = 'Enter count if available'}) {
+  Widget _buildDetailInput(TextEditingController controller, String label, String? errorText, {String hintText = 'Enter count if available', TextInputType keyboardType = TextInputType.number, List<TextInputFormatter>? inputFormatters}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(labelText: label, hintText: hintText, errorText: errorText),
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters ?? [FilteringTextInputFormatter.digitsOnly],
       ),
     );
   }

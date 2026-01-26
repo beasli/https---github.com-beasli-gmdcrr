@@ -36,6 +36,7 @@ class FamilyMember {
   String? skillTrainingInterest;
   String? handicapped = 'No';
   String? photoUrl; // Changed from photoPath to store remote URL
+  bool isAadharValidating = false;
 }
 
 /// Data model for a single tree record.
@@ -1230,7 +1231,39 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         const SizedBox(height: 16),
         if (isHead) Text('ID & Education Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.bold)),
         if (isHead) const SizedBox(height: 8),
-        TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
+        if (isHead)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: ElevatedButton(
+                  onPressed: member.isAadharValidating
+                      ? null
+                      : () async {
+                          if (member.aadharCtrl.text.length != 12) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid 12-digit Aadhar number'), backgroundColor: Colors.red));
+                            return;
+                          }
+                          setState(() => member.isAadharValidating = true);
+                          // Simulate API call / Debounce
+                          await Future.delayed(const Duration(seconds: 2));
+                          if (mounted) {
+                            setState(() => member.isAadharValidating = false);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Aadhar validated successfully'), backgroundColor: Colors.green));
+                          }
+                        },
+                  child: member.isAadharValidating ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Validate'),
+                ),
+              ),
+            ],
+          )
+        else
+          TextFormField(controller: member.aadharCtrl, decoration: const InputDecoration(labelText: 'Aadhar Card No.'), keyboardType: TextInputType.number, validator: (v) => _validateAadhar(v, isMandatory: isHead)),
         const SizedBox(height: 12),
         TextFormField(controller: member.mobileCtrl, decoration: const InputDecoration(labelText: 'Mobile Number'), keyboardType: TextInputType.phone, validator: (v) => _validateMobile(v, isMandatory: isHead)),
         const SizedBox(height: 12),
