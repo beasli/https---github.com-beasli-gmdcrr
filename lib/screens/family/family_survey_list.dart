@@ -113,7 +113,7 @@ class _FamilySurveyListPageState extends State<FamilySurveyListPage> with Single
       villageData = await LocalSurveyService.instance.getLastSavedVillage();
       if (villageData != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Offline mode: Loaded last known village.'), backgroundColor: Colors.orange));
+            content: Text('Offline mode: Loaded last known village.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.orange));
       }
     }
 

@@ -3,12 +3,16 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:geolocator/geolocator.dart';
+import '../../core/config/env.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/local_db.dart';
+import '../../core/services/location_service.dart';
 import '../../core/services/village_service.dart';
 import '../auth/login_screen.dart';
 import '../family/family_survey_list.dart';
 import '../family/family_survey_service.dart';
+import '../family/local_survey_service.dart';
 import '../village/local_entries.dart';
 import '../village/village_form.dart';
 
@@ -28,6 +32,8 @@ class _HomePageState extends State<HomePage> {
   Duration _remainingTime = Duration.zero;
   Timer? _timer;
   String _appVersion = '';
+  String? _villageName;
+  bool _isUpdatingLocation = false;
 
   @override
   void initState() {
@@ -38,6 +44,7 @@ class _HomePageState extends State<HomePage> {
     });
     _loadAppVersion();
     _startTimer();
+    _loadVillageName();
   }
 
   Future<void> _loadAppVersion() async {
@@ -49,6 +56,15 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (_) {}
+  }
+
+  Future<void> _loadVillageName() async {
+    final data = await LocalSurveyService.instance.getLastSavedVillage();
+    if (data != null && mounted) {
+      setState(() {
+        _villageName = data['data']?['village']?['name'];
+      });
+    }
   }
 
   void _startTimer() {
@@ -189,6 +205,61 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage())).then((_) => _checkAndSyncLocalData());
   }
 
+  Future<void> _handleUpdateLocation() async {
+    if (_isUpdatingLocation) return;
+    setState(() => _isUpdatingLocation = true);
+
+    try {
+      Position? pos;
+      // For staging/dev, use a fixed location to simplify testing
+      if (AppConfig.currentEnvironment != Environment.production) {
+        pos = Position(
+          latitude: 21.6701,
+          longitude: 72.2319,
+          timestamp: DateTime.now(),
+          accuracy: 1.0,
+          altitude: 0.0,
+          heading: 0.0,
+          speed: 0.0,
+          speedAccuracy: 0.0,
+          altitudeAccuracy: 0.0,
+          headingAccuracy: 0.0,
+        );
+      } else {
+        pos = await LocationService.getPositionWithFallback();
+      }
+
+      if (pos != null) {
+        final nearby = await VillageService().fetchNearbyByLatLng(pos.latitude, pos.longitude);
+        if (nearby != null) {
+          // Inject the captured location into the payload so it is persisted
+          if (nearby['data'] is Map) {
+            final dataMap = nearby['data'] as Map;
+            dataMap['user_lat'] = pos.latitude;
+            dataMap['user_lon'] = pos.longitude;
+          }
+          await LocalSurveyService.instance.saveVillage(nearby);
+          if (mounted) {
+            setState(() {
+              _villageName = nearby['data']?['village']?['name'];
+            });
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location updated successfully', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green));
+          }
+        } else {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No village found nearby', style: TextStyle(color: Colors.white)), backgroundColor: Colors.orange));
+        }
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not determine location', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingLocation = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -267,13 +338,59 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        "Welcome to your\nVillage Survey.",
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFFD0D7DD), // Light grey
-                          height: 1.4,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Welcome to your\nVillage Survey.",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Color(0xFFD0D7DD), // Light grey
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on, color: Color(0xFF36D1A8), size: 16),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        _villageName ?? "Unknown Village",
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Tooltip(
+                                      message: "You are in ${_villageName ?? 'Unknown Village'}. Please turn on the internet and tap Sync to update the village name.",
+                                      triggerMode: TooltipTriggerMode.tap,
+                                      child: const Icon(Icons.info_outline, color: Colors.white70, size: 18),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                            ),
+                            child: IconButton(
+                              icon: _isUpdatingLocation
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.sync, color: Colors.white),
+                              onPressed: _isUpdatingLocation ? null : _handleUpdateLocation,
+                              tooltip: 'Update Location',
+                            ),
+                          ),
+                        ],
                       ),
                       
                       const SizedBox(height: 32), // Spacing between header and grid

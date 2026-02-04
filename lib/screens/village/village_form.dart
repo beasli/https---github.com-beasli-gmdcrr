@@ -401,7 +401,14 @@ class _VillageFormPageState extends State<VillageFormPage> {
           nearby = await LocalSurveyService.instance.getLastSavedVillage();
           if (nearby != null && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Offline mode: Loaded last known village.'), backgroundColor: Colors.orange));
+                content: Text('Offline mode: Loaded last known village.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.orange));
+
+            // For staging/dev, use a fixed location to simplify testing
+            if (AppConfig.currentEnvironment != Environment.production) {
+              _lat = 21.6701;
+              _lng = 72.2319;
+              _gpsLocation = '$_lat,$_lng';
+            }
           }
         }
 
@@ -416,6 +423,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
             }
           } catch (_) {}
 
+          bool fullDataLoaded = false;
           // If we have a survey id, fetch the full survey and map fields into the form
           if (_remoteSurveyId != null) {
             _isInitializing = true;
@@ -424,6 +432,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
               final token2 = await AuthService().getToken();
               final full = await VillageService().fetchSurveyById(_remoteSurveyId!, bearerToken: token2);
               if (full != null && full['data'] != null) {
+                fullDataLoaded = true;
                 final d = full['data'] as Map<String, dynamic>;
                 // store media array if present, but filter out unreachable urls to avoid image 404 exceptions
                 if (d['media'] is List) {
@@ -588,17 +597,17 @@ class _VillageFormPageState extends State<VillageFormPage> {
                 }
               }
             } catch (_) {}
-            _isInitializing = false;
-            if (mounted) setState(() {});
-          } else {
+          }
+
+          if (!fullDataLoaded) {
             if (mounted) {
               _villageNameCtrl.text = v['name']?.toString() ?? '';
               _talukaCtrl.text = v['taluka']?.toString() ?? '';
               _districtCtrl.text = v['district']?.toString() ?? '';
             }
-            _isInitializing = false;
-            if (mounted) setState(() {});
           }
+          _isInitializing = false;
+          if (mounted) setState(() {});
         } else {
           if (!mounted) return;
           await showGeneralDialog<void>(

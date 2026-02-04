@@ -14,6 +14,7 @@ import '../../core/services/location_service.dart';
 import '../../core/services/local_db.dart';
 import 'package:signature/signature.dart';
 import '../../core/config/env.dart';
+import 'local_survey_service.dart';
 
 /// Data model for a single family member.
 class FamilyMember {
@@ -604,11 +605,28 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
     if (!mounted) return;
 
     // Now, fetch the nearby village using the obtained coordinates
-    final villageData = await _villageService.fetchNearbyByLatLng(lat, lon);
+    var villageData = await _villageService.fetchNearbyByLatLng(lat, lon);
+
+    // Fallback to local storage if network fails
+    if (villageData == null) {
+      villageData = await LocalSurveyService.instance.getLastSavedVillage();
+      if (villageData != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Offline mode: Loaded last known village.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.orange));
+
+        // For staging/dev, use a fixed location to simplify testing
+        if (AppConfig.currentEnvironment != Environment.production) {
+          lat = 21.6701;
+          lon = 72.2319;
+          setState(() => _finalGpsLocation = '$lat, $lon');
+        }
+      }
+    }
+
     if (mounted && villageData != null && villageData['data'] != null) {
       setState(() {
-        _villageId = villageData['data']['village']['id'];
-        _villageNameCtrl.text = villageData['data']['village']['name'] ?? 'N/A';
+        _villageId = villageData!['data']['village']['id'];
+        _villageNameCtrl.text = villageData!['data']['village']['name'] ?? 'N/A';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Village found: ${_villageNameCtrl.text}', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.green),

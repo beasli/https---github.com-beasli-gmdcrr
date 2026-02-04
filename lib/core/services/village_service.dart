@@ -23,7 +23,7 @@ class VillageService {
         headers['Authorization'] = 'Bearer $bearerToken';
       }
       final res = await _dio.get(
-        UrlBuilder.build('village-survey/village/near-by-village'),
+        '${AppConfig.baseUrl}/village-survey/village/near-by-village',
         queryParameters: {'lat': lat, 'lon': lon},
         options: Options(headers: headers),
       );
