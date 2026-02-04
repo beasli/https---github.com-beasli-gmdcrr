@@ -39,6 +39,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
   int? _draftId;
   int? _remoteSurveyId;
   bool _isInitializing = true;
+  String? _surveyStatus;
   String? _processingAction; // null, 'draft', or 'submit'
   final List<GlobalKey> _stepContentKeys = List.generate(6, (index) => GlobalKey());
   final List<GlobalKey> _stepTitleKeys = List.generate(6, (index) => GlobalKey());
@@ -434,6 +435,7 @@ class _VillageFormPageState extends State<VillageFormPage> {
               if (full != null && full['data'] != null) {
                 fullDataLoaded = true;
                 final d = full['data'] as Map<String, dynamic>;
+                _surveyStatus = d['status']?.toString();
                 // store media array if present, but filter out unreachable urls to avoid image 404 exceptions
                 if (d['media'] is List) {
                   final raw = List<Map<String, dynamic>>.from(d['media'] as List);
@@ -1385,15 +1387,17 @@ class _VillageFormPageState extends State<VillageFormPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _processingAction != null ? null : _handleSaveDraft,
-                  child: _processingAction == 'draft'
-                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Save Draft'),
+              if (_surveyStatus != 'completed') ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _processingAction != null ? null : _handleSaveDraft,
+                    child: _processingAction == 'draft'
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Save Draft'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
+              ],
               Expanded(
                 child: ElevatedButton(
                   onPressed: _processingAction != null ? null : _handleSubmit,

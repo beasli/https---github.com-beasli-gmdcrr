@@ -96,6 +96,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
   bool _isLoadingSurvey = false;
   int? _localDbId; // Unique ID for the local draft instance
   String? _signatureUrl;
+  String? _surveyStatus;
 
   final LocalDb _localDb = LocalDb();
   final FamilySurveyService _surveyService = FamilySurveyService();
@@ -690,6 +691,7 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
         if (family['id'] != null) {
           _familyNoCtrl.text = family['id'].toString();
         }
+        _surveyStatus = family['status']?.toString();
         _villageId = family['village_id'] as int?;
         _villageNameCtrl.text = family['village']?['name']?.toString() ?? '';
         _laneCtrl.text = family['lane']?.toString() ?? '';
@@ -2008,8 +2010,10 @@ class _FamilySurveyFormPageState extends State<FamilySurveyFormPage> {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Expanded(child: OutlinedButton(onPressed: _isProcessing ? null : _handleSaveDraft, child: const Text('Save Draft'))),
-                const SizedBox(width: 16), 
+                if (_surveyStatus != 'completed') ...[
+                  Expanded(child: OutlinedButton(onPressed: _isProcessing ? null : _handleSaveDraft, child: const Text('Save Draft'))),
+                  const SizedBox(width: 16),
+                ],
                 Expanded(
                     child: ElevatedButton(
                         onPressed: _isProcessing ? null : (_currentStep == _getSteps().length - 1 ? _handleSubmit : _onStepContinue),

@@ -417,13 +417,13 @@ class _HomePageState extends State<HomePage> {
                                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilySurveyListPage())).then((_) => _checkAndSyncLocalData());
                               },
                             ),
-                            _buildDashboardTile(
-                              icon: Icons.access_time,
-                              label: "Pending Entries",
-                              onTap: () {
-                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage())).then((_) => _checkAndSyncLocalData());
-                              },
-                            ),
+                            // _buildDashboardTile(
+                            //   icon: Icons.access_time,
+                            //   label: "Pending Entries",
+                            //   onTap: () {
+                            //     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalEntriesPage())).then((_) => _checkAndSyncLocalData());
+                            //   },
+                            // ),
                             _buildDashboardTile(
                               icon: Icons.power_settings_new,
                               label: "Logout",

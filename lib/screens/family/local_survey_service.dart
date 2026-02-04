@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -20,9 +21,16 @@ class LocalSurveyService {
   LocalSurveyService._privateConstructor();
   static final LocalSurveyService instance = LocalSurveyService._privateConstructor();
 
+  // In-memory storage for web
+  final List<Map<String, dynamic>> _webSurveys = [];
+  final List<Map<String, dynamic>> _webVillages = [];
+
   // Only have a single app-wide reference to the database.
   static Database? _database;
   Future<Database> get database async {
+    if (kIsWeb) {
+      throw UnsupportedError('SQLite is not supported on web. Use in-memory fallback.');
+    }
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
@@ -71,6 +79,29 @@ class LocalSurveyService {
 
   /// Inserts a new survey or updates an existing one based on the ID.
   Future<int> insertOrUpdate(Map<String, dynamic> surveyData) async {
+    if (kIsWeb) {
+      final id = surveyData['family']['id'];
+      final headName = surveyData['members']?[0]?['name'] ?? '';
+      final houseNo = surveyData['family']?['house_no'] ?? '';
+
+      int finalId = id ?? -(headName.hashCode ^ houseNo.hashCode);
+
+      final Map<String, dynamic> row = {
+        columnId: finalId,
+        columnHeadName: headName,
+        columnHouseNo: houseNo,
+        columnSurveyData: jsonEncode(surveyData),
+        columnUpdatedAt: DateTime.now().toIso8601String(),
+      };
+
+      final idx = _webSurveys.indexWhere((s) => s[columnId] == finalId);
+      if (idx >= 0) {
+        _webSurveys[idx] = row;
+      } else {
+        _webSurveys.add(row);
+      }
+      return finalId;
+    }
     final db = await instance.database;
     final id = surveyData['family']['id'];
     final headName = surveyData['members']?[0]?['name'] ?? '';
@@ -100,6 +131,22 @@ class LocalSurveyService {
 
   /// Fetches all locally saved surveys.
   Future<List<Map<String, dynamic>>> queryAllSurveys() async {
+    if (kIsWeb) {
+      _webSurveys.sort((a, b) => (b[columnUpdatedAt] as String).compareTo(a[columnUpdatedAt] as String));
+      return _webSurveys.map((map) {
+        final survey = jsonDecode(map[columnSurveyData] as String) as Map<String, dynamic>;
+        final serverId = survey['family']['id'];
+        return {
+          'id': serverId,
+          'head_name': map[columnHeadName],
+          'house_no': map[columnHouseNo],
+          'status': 'local_draft',
+          'is_local': true,
+          'survey_data': survey,
+        };
+      }).toList();
+    }
+
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.query(table, orderBy: "$columnUpdatedAt DESC");
 
@@ -121,12 +168,34 @@ class LocalSurveyService {
 
   /// Deletes a survey from the local database by its server ID.
   Future<int> delete(int id) async {
+    if (kIsWeb) {
+      _webSurveys.removeWhere((s) => s[columnId] == id);
+      return 1;
+    }
     final db = await instance.database;
     return await db.delete(table, where: '$columnId = ?', whereArgs: [id]);
   }
 
   /// Saves the village payload to local storage.
   Future<void> saveVillage(Map<String, dynamic> villageData) async {
+    if (kIsWeb) {
+      final village = villageData['data']?['village'];
+      if (village != null && village['id'] != null) {
+        final id = village['id'];
+        final row = {
+          'id': id,
+          'payload': jsonEncode(villageData),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+        final idx = _webVillages.indexWhere((v) => v['id'] == id);
+        if (idx >= 0) {
+          _webVillages[idx] = row;
+        } else {
+          _webVillages.add(row);
+        }
+      }
+      return;
+    }
     final db = await instance.database;
     final village = villageData['data']?['village'];
     if (village != null && village['id'] != null) {
@@ -144,6 +213,11 @@ class LocalSurveyService {
 
   /// Retrieves the most recently saved village data.
   Future<Map<String, dynamic>?> getLastSavedVillage() async {
+    if (kIsWeb) {
+      if (_webVillages.isEmpty) return null;
+      _webVillages.sort((a, b) => (b['updated_at'] as String).compareTo(a['updated_at'] as String));
+      return jsonDecode(_webVillages.first['payload'] as String) as Map<String, dynamic>;
+    }
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.query(
       tableVillages,
